@@ -51,7 +51,7 @@ Adapters replace native layout show transformations within their local HTML
 scope. Arbitrary custom show transformations of grid/line/align/cell elements
 are not composed with the adapters; style the emitted classes or their body
 content instead. The wrapper functions themselves cannot be used as native
-set/show selectors; see the README's naming limitation.
+set/show selectors; see the naming limitation in reference.md.
 
 ### Grid fields and shared styling
 
