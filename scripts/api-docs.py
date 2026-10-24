@@ -4,8 +4,8 @@
   api-docs.py            fetch the latest docs from typst.app and update the sources
   api-docs.py --check    fail if the sources differ from what the latest docs give
 
-letmeout's `grid`, `line`, `align`, and `html-page` take the same arguments as
-Typst's `grid`, `line`, `align`, and `page`. Their doc comments copy Typst's
+letmeout's `grid`, `line`, and `align` take the same arguments as
+Typst's `grid`, `line`, and `align`. Their doc comments copy Typst's
 summary and parameter docs, with types and defaults, and add what each part
 does in HTML. The HTML notes are written by hand in scripts/api.toml.
 

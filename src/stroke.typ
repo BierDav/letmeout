@@ -38,7 +38,7 @@
     class: "letmeout-stroke-paint", style:
       "position: absolute; display: block; pointer-events: none; width: 100%; height: 100%; "
       + offset + ": calc(-1 * " + cap + "); " + dimension + ": calc(100% + " + size(thickness) + "); "
-      + "background: " + paint(value.paint) + "; mask-image: " + mask
+      + "background: " + paint(value.paint, role: "ink") + "; mask-image: " + mask
       + "; mask-size: 100% 100%; mask-repeat: no-repeat",
   ))
   html.elem("span", attrs: (

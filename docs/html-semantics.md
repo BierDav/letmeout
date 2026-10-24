@@ -5,6 +5,14 @@ selectable content, CSS sizing, normal document flow, and decorative vector
 strokes. It does not measure a PDF page or turn document content into a picture.
 All mappings below apply only to HTML. Paged exports retain the native elements.
 
+This is the field reference for the overridden `grid`, `line`, and `align`
+functions, the native grid subelements they adapt, and the native `page` and
+`pagebreak` APIs interpreted by `#show: letmeout`. Native argument validation
+and defaults still apply. The generated comments on the three wrapper functions
+also include Typst's parameter types, defaults, and an HTML note for every
+parameter. Use `std` for native set/show selectors; the `extras.grid-*` aliases
+refer to the native grid subelements.
+
 ## Grid
 
 | Native feature | HTML interpretation |
@@ -45,6 +53,84 @@ are not composed with the adapters; style the emitted classes or their body
 content instead. The wrapper functions themselves cannot be used as native
 set/show selectors; see the README's naming limitation.
 
+### Grid fields and shared styling
+
+`columns` accepts a count, a single track size, or an array. A count creates
+automatic tracks; an empty array becomes one automatic column. `rows` accepts
+the same forms; an empty array produces automatic rows as needed. Explicit rows
+remain even when empty. Extra rows repeat the final row definition. Percentages
+retain CSS sizing rules; a percentage row height needs a definite browser
+block size to behave like a fixed height.
+
+`gutter` supplies both axes; `column-gutter` and `row-gutter` override their
+respective axis. Gutter arrays repeat their last entry, rather than cycling;
+an empty array means zero. A single fixed/relative length uses a CSS gap.
+Multiple entries, `auto`, and fractions use interleaved tracks, so spanning
+cells also span the intervening gutters.
+
+Each of `inset`, `align`, `fill`, and `stroke` accepts a uniform value, an array
+cycling by column (`x % array.len()`), or a function called with zero-based
+`(x, y)`. For spanning cells those are the top-left logical coordinates.
+Unoccupied slots become cells and receive these styles too. Empty arrays use
+zero padding, no explicit alignment, transparent fill, or no stroke, respectively.
+`children` are placed row by row, respecting explicit cell coordinates, spans,
+and group boundaries; the emitted DOM is sorted by logical row and column.
+
+### `grid.cell` / `extras.grid-cell`
+
+| Field | HTML behavior |
+| --- | --- |
+| `body` | Selectable content in the cell's inner block; nested supported layouts remain HTML. |
+| `x` | Zero-based logical column. `auto` searches for a free column; with an explicit `y`, searches that row from the first column. Logical columns run from the start side of the text direction. |
+| `y` | Zero-based row. `auto` searches for a free row; with an explicit `x`, searches that column from the first row. When both coordinates are automatic, placement follows the row-major cursor. |
+| `colspan` | Number of logical columns occupied, including any intervening gutter tracks in the CSS span. Must be positive and fit the grid. |
+| `rowspan` | Number of logical rows occupied, including intervening gutters. Must be positive; creates additional rows when needed. Overlapping occupied slots are errors. |
+| `inset` | CSS padding. `auto` inherits the grid inset. A length replaces all sides; a dictionary replaces named sides, using `top`/`right`/`bottom`/`left` before `x`/`y` before `rest`. Unspecified or automatic sides inherit. Use `0pt` to remove padding. |
+| `align` | Overrides cell text/container alignment. `auto` inherits the grid value; a single-axis override keeps the grid's other axis. Horizontal physical/logical and vertical alignment behave as in `align` below. |
+| `fill` | CSS background. `auto` inherits the grid fill; `none` removes it; a color or supported gradient replaces it. |
+| `stroke` | Cell edge strokes. `auto` inherits grid strokes; `none` erases all cell edges. Side dictionaries override individual sides; omitted sides and automatic stroke fields inherit. See the shared stroke reference below. |
+| `breakable` | `true` emits `break-inside: auto`; `false` emits `break-inside: avoid`. `auto` permits breaks if any spanned row has an `auto` track, otherwise avoids them. A browser fragmentation hint; no effect on continuous screen flow. |
+
+Native set rules on `std.grid.cell` supply defaults before explicit fields are
+folded in. Cell show-set rules can style the body using its resolved `x`/`y`.
+
+### `grid.hline` / `extras.grid-hline`
+
+| Field | HTML behavior |
+| --- | --- |
+| `y` | Zero-based row edge index. `auto` uses the row after the last fully automatically placed cell, or zero before any such cell. An explicit index can reach the grid's final edge. |
+| `start` | Zero-based starting column, inclusive; defaults to zero. |
+| `end` | Ending column, exclusive; `none` extends to the final column. The range must be nonempty and within the grid. Crosses intervening gutters. |
+| `stroke` | Decorative stroke overriding cell/grid edges along the range. `none` erases those edges. Later separators replace earlier ones on shared segments. All shared stroke fields below apply. |
+| `position` | `top` selects the edge before row `y`; `bottom` selects the edge after that row. With a gutter these are different edges. `bottom` requires an existing row. |
+
+### `grid.vline` / `extras.grid-vline`
+
+| Field | HTML behavior |
+| --- | --- |
+| `x` | Zero-based logical column edge index. `auto` uses the column after the last fully automatically placed cell, or zero before any such cell. An explicit index can reach the grid's final edge. |
+| `start` | Zero-based starting row, inclusive; defaults to zero. |
+| `end` | Ending row, exclusive; `none` extends to the final row. The range must be nonempty and within the grid. Crosses intervening gutters. |
+| `stroke` | Same stroke fields and edge-erasing/precedence behavior as `grid.hline`. |
+| `position` | `start`/`end` select the logical edge before/after column `x` and follow text direction; `left`/`right` stay physical. Selecting the edge after a column requires an existing column. |
+
+Separators add no cells and do not move the placement cursor. Automatic
+separator indices refer to the last cell whose **both** coordinates were
+automatic, rather than the most recent explicitly or partially placed cell.
+With zero gutters adjoining edges collapse. Explicit separators take priority
+over explicit cell strokes, which take priority over grid defaults. Among cell
+edges of equal priority the thicker wins (later cells win equal thickness).
+
+### `grid.header` / `extras.grid-header` and `grid.footer` / `extras.grid-footer`
+
+| Element / field | HTML behavior |
+| --- | --- |
+| Both: `children` | Cells and separators are flattened into the grid at their group position; boundaries advance the placement cursor to a fresh row. Cells get `data-grid-group="header"` or `"footer"`. No semantic table section or sticky behavior is added. |
+| Both: `repeat` | Recorded on cells as `data-grid-repeat`. Content renders once; neither screen flow nor browser printing repeats the group. |
+| Header: `level` | Recorded on cells as `data-grid-level`. No hierarchical replacement happens without page boundaries. Footer/body cells use level zero. |
+
+Native set rules on headers, footers, and separators supply their defaults.
+
 ## Align
 
 | Native feature | HTML interpretation |
@@ -84,6 +170,30 @@ technology. It is not automatically an `hr`: a geometric stroke does not imply
 a thematic break. Positive vertical extent reserves space in the flow; negative
 coordinates can overflow its box. The line itself follows physical coordinates,
 independent of text direction.
+
+### Shared stroke fields
+
+These fields apply to `line.stroke`, grid/cell strokes, and separator strokes.
+For grid/cell strokes, an outer dictionary may select `top`, `right`, `bottom`,
+`left`, `x`, `y`, and `rest`; explicit sides beat axis shorthands, which beat
+`rest`. These are physical sides, including in RTL. Each side accepts a stroke
+value or a dictionary of the fields below. A cell's unspecified/automatic
+fields inherit its grid stroke; otherwise automatic fields resolve to black,
+`1pt`, butt caps, miter joins, no dash, and miter limit 4.
+
+| Field | HTML behavior |
+| --- | --- |
+| `paint` | CSS background through an SVG stroke mask. Solid colors and supported gradients work; unsupported tilings and gradient geometry fail explicitly. Colors use the document's light/dark policy. |
+| `thickness` | SVG stroke width and CSS stroke box thickness. Font-relative lengths resolve at the current Typst font size. |
+| `cap` | SVG `stroke-linecap`: `"butt"`, `"round"`, or `"square"`. The mask allows half a stroke beyond each endpoint for projecting caps. |
+| `join` | SVG `stroke-linejoin`. Retained, but these drawings are separate straight segments, so it does not produce corner joins between grid edges. |
+| `miter-limit` | SVG `stroke-miterlimit`. No visible effect without a joined corner. |
+| `dash` | Native named patterns are normalized by Typst. `none`/resolved `auto` is solid; an array or dictionary supplies a custom pattern. Maps to SVG `stroke-dasharray`. |
+| `dash.array` | Alternating painted/gap lengths; lengths resolve at the current font size. A `"dot"` entry becomes one stroke thickness. |
+| `dash.phase` | Pattern offset, mapped to SVG `stroke-dashoffset`, preserving the native resolved length. |
+
+Grid `stroke: none` removes edges; cell or separator `stroke: none` can erase
+lower-priority edges. `line` uses Typst's native stroke argument contract.
 
 ## Paint, CSS, and deliberate limits
 
@@ -131,18 +241,37 @@ section.letmeout-page                full width; fill
 
 | Native feature | HTML interpretation |
 | --- | --- |
-| `paper`, `width` | The maximum width of the centred sheet. On narrower screens the sheet fills the available width. `auto` means full width. |
-| `height` | No effect. HTML has no page height; the block fits its content. |
+| `paper` | Supplies native width and height from the named paper size. Explicit dimensions override their corresponding paper dimension. The resolved width caps the sheet; the height also supplies the reference for vertical percentage margins. |
+| `width` | Maximum width of the centred sheet. On narrower screens the sheet fills the available width. `auto` removes the cap. After `flipped`, the swapped dimension supplies this width. |
+| `height` | Does not constrain the block's height; content determines it. Still used to resolve vertical percentage margins and automatic margins, and becomes the width when `flipped` is true. |
 | `flipped` | Swaps width and height, so it changes the sheet width. |
 | `margin` | Padding on the sheet, with Typst's defaults (2.5/21 of the shorter side), folding, `x`/`y`/`rest`, and ratios. With a fixed width, every margin is a fraction of the sheet width (`cqi`). It equals the declared length at full width and shrinks on narrower screens. |
-| `binding`, `inside`/`outside` | There are no facing pages, so the first page's layout applies. With a left binding, the inside margin is on the left. |
+| `binding` | There are no facing pages, so the first page's layout applies. `left` puts an `inside` margin on the left; `right` puts it on the right. `auto` chooses left for LTR and right for RTL. Physical `left`/`right` margins stay physical. |
 | `fill` | Background of the full-width block. `auto` is transparent, so host colours and dark mode are not overridden; set a fill for a paper colour. |
-| `header`, `footer` | A `<header>` at the start of the block and a `<footer>` at its end, each shown once and placed inside the margins. The header is bottom-aligned with `header-ascent` spacing; the footer is top-aligned with `footer-descent` spacing. Taller content grows the margin instead of overlapping. |
-| `numbering`, `number-align` | Automatic header or footer with `counter(page).display`, including totals such as `"1 / 1"`. The page counter does not advance, because the document is one page. `counter(page).update` works. |
-| `background`, `foreground` | Layers covering the sheet, centred like Typst's, hidden from assistive technology (Typst marks them as artifacts). The foreground does not intercept clicks. |
+| `header` | Content in a `<header>` before the body, once per block, bottom-aligned within the top margin. `none` removes it. `auto` uses page numbering only when `number-align` selects the top, otherwise no header. Explicit content replaces automatic numbering here. Taller content grows the margin. |
+| `header-ascent` | Gap below header content, resolved relative to the top margin and emitted as bottom padding. Scales with the sheet width when it is fixed. |
+| `footer` | Content in a `<footer>` after the body, once per block, top-aligned within the bottom margin. `none` removes it. `auto` uses page numbering unless `number-align` selects the top. Explicit content replaces automatic numbering here. Taller content grows the margin. |
+| `footer-descent` | Gap above footer content, resolved relative to the bottom margin and emitted as top padding. Scales with the sheet width when it is fixed. |
+| `numbering` | `none` disables automatic numbers. A pattern/function is passed to `counter(page).display`; patterns with multiple counting symbols and numbering functions request the total too. HTML has one page and blocks/breaks do not advance the counter. Explicit `counter(page).update` still works. |
+| `number-align` | Horizontal component aligns automatic numbers. A vertical component of `top` chooses the automatic header; other values choose the footer. Does not reposition explicit header/footer content. |
+| `background` | Content in an absolutely positioned layer behind the sheet's content, centred on both axes and clipped to the sheet. `none` omits it. Hidden from assistive technology and does not intercept clicks. |
+| `foreground` | Same geometry as `background`, above the content. `none` omits it. Hidden from assistive technology and does not intercept clicks. |
 | `columns` | CSS columns with the `columns.gutter` gap. Columns are at least `12em` wide, so they collapse on narrow screens. |
 | `page(...)[...]` | Its own block with its own settings, inheriting the surrounding settings. Content before and after it forms separate blocks, each with its header and footer. |
-| `bleed`, `supplement` | No effect on screen. Fills already extend to the screen edges. |
+| `bleed` | No screen layout effect; no trim box or bleed area is created. Fill already covers the full-width block. |
+| `supplement` | No screen layout effect; the adapter does not create page references or render a supplement. |
+| `body` | Selectable HTML inside the sheet's body, using its padding and optional CSS columns. A native page call gets its own block, inheriting surrounding settings. |
+
+`margin` accepts a uniform length/ratio or a dictionary. `top` and `bottom`
+override `y`; horizontal sides override `x`; `x`/`y` override `rest`. The
+`inside`/`outside` pair selects binding-relative horizontal margins. Omitted
+sides fold with inherited margins. `auto` sides use 2.5/21 of the shorter
+nonautomatic paper dimension (210mm if both dimensions are automatic).
+Horizontal percentages resolve against width and vertical percentages against
+height; an automatic dimension leaves its percentage relative to sheet width.
+For a fixed sheet width, resolved geometry becomes `cqi`, including absolute
+lengths. With automatic width, absolute parts stay in points and percentage
+parts use `cqi`. Font-relative lengths resolve at the current Typst font size.
 
 ### How `set page` is read
 
@@ -164,6 +293,18 @@ Two Typst rules shape the result:
   document therefore stay outside all blocks, and `#show: letmeout` must come
   first.
 
+A `context` hides its content from the probes. This happens when a show rule
+after `#show: letmeout`, often a template, wraps the rest of the document in
+`context`. Page settings inside one cannot become blocks, so HTML export shows
+a `div.letmeout-error` card that stays at the top of the screen, followed by
+the content without its page settings, instead of failing. Typst does not give
+packages source lines, so the card quotes the start of the first affected
+heading or paragraph instead; math is left out of the quote. Paged output is unchanged. To fix it, move
+`#show: letmeout` below the template's show rule, or set the page before it.
+Each `context` item is checked on the first layout pass, outside the blocks.
+Contexts without page settings stay in their block, and inline ones stay in
+their paragraph.
+
 Typst prints "page set rule was ignored" for page styles in HTML export.
 Packages cannot silence warnings, but the settings are applied.
 
@@ -172,20 +313,33 @@ on a new sheet when the HTML is printed.
 
 ## Target-specific settings
 
-`on-target(html:, paged:)` is a context block that shows one of two contents.
-`show-target(html:, paged:)` returns a function for `#show:`. Both choose by
-`target()` and do nothing else, so paged output equals the paged branch alone.
+The target and color-scheme helpers below are exported through `extras`. Use
+`extras.name` or explicitly import selected names with `#import extras: name`.
 
-`html-page(..)` is `show-target` with a `set page` in its HTML branch. It is
-needed because a context block hides its set rules: they end with the block,
-and the probes described above cannot see into a context block that has not
-run. So `show-target` returns two things: an invisible `metadata` marker that
-holds the HTML rule and the body, followed by the context block as the
-fallback. `#show: letmeout` runs in HTML, finds markers at the document level
-(in sequences and style nodes), applies the HTML rule directly, and drops the
-fallback. The page settings in the rule then become ordinary style nodes, and
+
+`by-target(html:, paged:)` accepts either content branches or function
+branches. Content is selected in a context block; functions produce a show rule
+for `#show: by-target(html: body => { ...; body })`. A missing content branch is
+empty; a missing function branch is identity. Mixed content/function branches
+are rejected. `html-only(value)` and `paged-only(value)` supply a single branch. A native
+`.with()` function can be passed directly, such as
+`#show: html-only(page.with(width: auto))`. This keeps native wrapper semantics.
+The previous `on-target` and `show-target` names remain compatibility aliases.
+
+Page settings use native `set page` inside the target function. A context block
+alone would hide those set rules from the document probes. The function form
+therefore returns an invisible `metadata` marker holding the HTML rule and body,
+followed by a context fallback. `#show: letmeout` runs in HTML, finds markers at
+the document level (in sequences and style nodes), applies the HTML rule directly,
+and drops the fallback. Page settings then become ordinary style nodes, and
 blocks split as for `set page`. Markers nested inside other elements, or a
 document without `#show: letmeout`, use the context fallback.
+
+`by-color-scheme(light:, dark:)` selects content by color scheme. `light-only`
+and `dark-only` supply a single branch. In HTML, the existing light/dark elements
+and document color-scheme rules control visibility. Paged output returns only
+the light branch. These helpers select content; `theme` controls scoped colors
+and frame policy.
 
 ## Pagebreak
 
@@ -195,3 +349,39 @@ A strong break renders an empty, hidden `div.letmeout-pagebreak` with
 `break-before: page`, so a printer breaks there. `to: "odd"` / `"even"` become
 `recto` / `verso`. Weak breaks, including the ones a `page` call adds around
 its body, render nothing: a block already starts on a new printed sheet.
+
+| Field | HTML behavior |
+| --- | --- |
+| `weak` | `true` emits nothing. `false` emits a hidden print-break element with no screen gap. Neither starts a new page block, repeats marginal content, nor advances the counter. |
+| `to` | For a strong break, `none` emits `break-before: page`, `"odd"` emits `recto`, and `"even"` emits `verso`. A print hint interpreted by the browser, with no screen effect. Ignored for weak breaks. |
+
+## Document and screen adapters
+
+`letmeout` accepts these fields in `#show: letmeout.with(...)`. Its `body` is
+the remainder of the scope, supplied automatically by the show rule.
+
+| Field | HTML behavior |
+| --- | --- |
+| `body` | Resolves target-specific show rules, reads page settings, emits continuous page blocks, and applies font, color, MathML, and frame handling below. |
+| `color-scheme` | Default `"light dark"` follows the reader. `"light"` or `"dark"` fixes the scheme. Sets CSS `color-scheme` and a `Canvas` background; `none` omits both and emits no dark visibility/frame rules. |
+| `dark-colors` | Default `()`. Array of `(light-color, dark-color)` pairs replacing automatically derived dark variants through CSS custom properties. Applies to colors written by the adapters, including gradient stops; no recoloring of frame internals. Nested `extras.theme` mappings inherit and override by color. |
+| `dark-frames` | Default `"invert"` applies `invert(1) hue-rotate(180deg)` to framed SVG in dark mode. `none` preserves frame colors. The policy inherits through scoped themes. |
+| `css` | Default empty string. Appended to the emitted document stylesheet as supplied; can style emitted classes or override document rules. |
+
+The screen adapters also intercept the following native elements. They preserve
+their other fields and let Typst's HTML exporter handle them:
+
+| Native element / fields affected | HTML behavior |
+| --- | --- |
+| `text`: `font` | The initial document font list becomes `body`'s `font-family`; differing text gets a span. Font dictionaries contribute their `name`; other dictionary options are not converted into CSS font-selection rules. |
+| `text`: `fill` | The initial fill becomes body text color. Differing solid colors get spans using the light/dark color conversion. Non-color local fills get no extra span or paint conversion from this adapter. |
+| `math.equation`: `body`, `supplement` | Body text is exempt from the font/color spans to preserve native MathML. A local internal supplement marker controls this exemption; the equation's supplement for references, numbering, and other fields remain native. |
+| `html.elem`: `tag`, `body` | For `script`, `style`, `title`, and `textarea`, body text uses the root font/fill so the text adapter adds no spans. Tag, attributes, and native plain-text content are preserved. Other tags use native export. |
+| `html.frame`: all fields | The native frame is retained inside a `letmeout-frame` element that preserves its inline/block position. Frame rendering fields remain native; only the surrounding dark-mode CSS filter is added. |
+| `image`: `width`, `height`, `fit` | The native `<img>` is kept inside a `letmeout-image` element (`display: contents`). Typst writes the pixel size as `width`/`height` attributes, which browsers treat as a CSS size, so a side left `auto` is reset to `auto` and follows the aspect ratio, as in PDF. With neither side set the image is scaled down to fit its container. A fixed height that is too wide for the screen shrinks inside its box (`object-fit: contain`). With both sides set, `fit` maps to `object-fit`: `"cover"` → `cover`, `"contain"` → `contain`, `"stretch"` → `fill`. |
+| `place.flush`: no fields | Omitted in HTML: native page calls add this invisible flush, and continuous blocks already end their printed page. |
+
+The screen adapter also removes the browser's default body margin and adds dark
+variants for Typst's default raw-code palette. A custom raw theme keeps its own
+colors. These screen rules require `#show: letmeout`; the three layout wrappers
+work without it. Paged bodies and native element arguments are passed through.

@@ -26,21 +26,50 @@
 }
 #let tracks(values) = values.map(track).join(" ")
 
-#let color-css(value) = rgb(value).to-hex()
+#let hex(value) = rgb(value).to-hex()
+
+// Shared by document and scoped themes. CSS inheritance merges nested maps.
+#let dark-properties(pairs) = pairs.map(pair => {
+  assert(type(pair) == array and pair.len() == 2,
+    message: "letmeout: dark-colors takes (light, dark) color pairs")
+  let (light, dark) = pair
+  assert(type(light) == color and type(dark) == color,
+    message: "letmeout: dark-colors takes (light, dark) color pairs")
+  "--letmeout-dark-" + hex(light).slice(1) + ": " + hex(dark)
+})
+
+// Dark mode keeps the hue and mirrors the lightness around the middle: dark
+// ink becomes light and light fills become dark; mid tones stay. White fills
+// land on the browser's dark canvas, as they match the light one.
+#let dark-variant(value, role) = {
+  let (l, c, h, a) = oklch(value).components()
+  let l = l / 100%
+  let l = if role == "fill" { if l > 0.5 { 0.2357 + (1 - l) * 0.5286 } else { l } }
+    else { if l < 0.5 { 0.92 - l * 0.84 } else { l } }
+  rgb(oklch(l * 100%, c, h, a))
+}
+
+// A color for both schemes. `role` is "fill" for backgrounds, "ink" for text
+// and strokes. A `--letmeout-dark-<hex>` property replaces the automatic dark
+// variant; outside a dark color scheme `light-dark` picks the light color.
+#let color-css(value, role: "fill") = {
+  let light = hex(value)
+  "light-dark(" + light + ", var(--letmeout-dark-" + light.slice(1) + ", " + hex(dark-variant(value, role)) + "))"
+}
 
 // Sample in Typst's chosen color space, then let CSS interpolate nearby stops.
 // This also works for spaces (such as CMYK) that CSS cannot interpolate in.
-#let gradient-stops(value) = {
+#let gradient-stops(value, role) = {
   let stops = value.stops()
   let result = ()
   for (i, stop) in stops.enumerate() {
-    result.push(color-css(stop.at(0)) + " " + size(stop.at(1)))
+    result.push(color-css(stop.at(0), role: role) + " " + size(stop.at(1)))
     if i + 1 < stops.len() {
       let next = stops.at(i + 1).at(1)
       if next > stop.at(1) {
         for j in range(1, 17) {
           let offset = stop.at(1) + (next - stop.at(1)) * j / 17
-          result.push(color-css(value.sample(offset)) + " " + size(offset))
+          result.push(color-css(value.sample(offset), role: role) + " " + size(offset))
         }
       }
     }
@@ -48,14 +77,14 @@
   result.join(", ")
 }
 
-#let paint(value) = {
+#let paint(value, role: "fill") = {
   if value == none { return "transparent" }
-  if type(value) == color { return color-css(value) }
+  if type(value) == color { return color-css(value, role: role) }
   assert(type(value) == gradient,
     message: "letmeout: arbitrary Typst tiling content has no CSS paint equivalent; use an HTML background image")
   assert(value.relative() != "parent",
     message: "letmeout: parent-relative gradients need an explicit HTML background on the parent")
-  let stops = gradient-stops(value)
+  let stops = gradient-stops(value, role)
   if value.kind() == gradient.linear {
     "linear-gradient(" + str(value.angle().deg() + 90) + "deg, " + stops + ")"
   } else if value.kind() == gradient.conic {
