@@ -4,4 +4,4 @@
 #import "src/align.typ": align
 #import "src/document.typ": letmeout
 // Optional helpers stay in a namespace, including with wildcard imports.
-#import "extras.typ"
+#import "letmeout-extras.typ"

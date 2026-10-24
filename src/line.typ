@@ -26,8 +26,9 @@
 // https://typst.app/docs/reference/visualize/line/. Edit scripts/api.toml, not this block.
 /// A line from one point to another.
 ///
-/// **In HTML:** An SVG stroke mask painted by CSS, hidden from screen readers. Paged
-/// output is Typst's native line, unchanged. Use `std.line` for set and show rules.
+/// #quote(block: true)[*Note:* An SVG stroke mask painted by CSS, hidden from screen
+/// readers. Paged output is Typst's native line, unchanged. Use `std.line` for set and
+/// show rules.]
 ///
 /// - start (array): The start point of the line.
 ///
@@ -35,49 +36,49 @@
 ///
 ///   Default: `(0% + 0pt, 0% + 0pt)`.
 ///
-///   **In HTML:** Physical `(x, y)` offset from the container's top-left, independent
-///   of text direction. Percentages on both axes use its inline width; absolute,
-///   font-relative, and mixed lengths retain their components. Positive vertical extent
-///   reserves flow height; negative coordinates can overflow.
+///   #quote(block: true)[*Note:* Physical `(x, y)` offset from the container's
+///   top-left, independent of text direction. Percentages on both axes use its inline
+///   width; absolute, font-relative, and mixed lengths retain their components.
+///   Positive vertical extent reserves flow height; negative coordinates can overflow.]
 ///
 /// - end (none, array): The point where the line ends.
 ///
 ///   Default: `none`.
 ///
-///   **In HTML:** Explicit physical `(x, y)` endpoint, with the same units and
-///   width-based percentages as `start`. When given, overrides both `length` and
-///   `angle`. With `none`, the endpoint is computed from `start`, `length`, and
-///   `angle`.
+///   #quote(block: true)[*Note:* Explicit physical `(x, y)` endpoint, with the same
+///   units and width-based percentages as `start`. When given, overrides both `length`
+///   and `angle`. With `none`, the endpoint is computed from `start`, `length`, and
+///   `angle`.]
 ///
 /// - length (relative): The line’s length. This is only respected if `end` is `none`.
 ///
 ///   Default: `0% + 30pt`.
 ///
-///   **In HTML:** Distance from `start` when `end` is `none`. Percentages use the
-///   container's inline width; absolute, font-relative, and mixed lengths stay
-///   responsive. Ignored when `end` is given.
+///   #quote(block: true)[*Note:* Distance from `start` when `end` is `none`.
+///   Percentages use the container's inline width; absolute, font-relative, and mixed
+///   lengths stay responsive. Ignored when `end` is given.]
 ///
 /// - angle (angle): The angle at which the line points away from the origin. This is
 ///   only respected if `end` is `none`.
 ///
 ///   Default: `0deg`.
 ///
-///   **In HTML:** Clockwise direction: `0deg` points right and `90deg` points down. The
-///   computed endpoint determines CSS rotation; vertical and reversed lines work.
-///   Ignored when `end` is given.
+///   #quote(block: true)[*Note:* Clockwise direction: `0deg` points right and `90deg`
+///   points down. The computed endpoint determines CSS rotation; vertical and reversed
+///   lines work. Ignored when `end` is given.]
 ///
 /// - stroke (length, color, gradient, stroke, tiling, dictionary):
 ///   How to stroke the line.
 ///
 ///   Default: `1pt + black`.
 ///
-///   **In HTML:** CSS paint through an SVG mask. `paint` accepts colors and supported
-///   gradients; `thickness` sets the stroke width; `cap` maps to butt/round/square SVG
-///   caps; `dash` accepts named patterns or an array/dictionary with `array` and
-///   `phase` (`dot` uses the thickness). `join` and `miter-limit` are emitted but have
-///   no visible effect on a straight segment. Automatic fields use native defaults.
-///   Unsupported paints fail explicitly. Colors follow the document's color scheme. See
-///   docs/html-semantics.md for the shared stroke-field reference.
+///   #quote(block: true)[*Note:* CSS paint through an SVG mask. `paint` accepts colors
+///   and supported gradients; `thickness` sets the stroke width; `cap` maps to
+///   butt/round/square SVG caps; `dash` accepts named patterns or an array/dictionary
+///   with `array` and `phase` (`dot` uses the thickness). `join` and `miter-limit` are
+///   emitted but have no visible effect on a straight segment. Automatic fields use
+///   native defaults. Unsupported paints fail explicitly. Colors follow the document's
+///   color scheme. See docs/html-semantics.md for the shared stroke-field reference.]
 ///
 /// -> content
 #let line(..args) = bridge(std.line(..args), std.line, html-line)

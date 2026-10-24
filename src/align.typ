@@ -17,27 +17,28 @@
 // https://typst.app/docs/reference/layout/align/. Edit scripts/api.toml, not this block.
 /// Aligns content horizontally and vertically.
 ///
-/// **In HTML:** A block that aligns its content with CSS. Paged output is Typst's
-/// native alignment, unchanged. Use `std.align` for set and show rules.
+/// #quote(block: true)[*Note:* A block that aligns its content with CSS. Paged output
+/// is Typst's native alignment, unchanged. Use `std.align` for set and show rules.]
 ///
 /// - alignment (alignment): The alignment along both axes.
 ///
 ///   Default: `start + top`. This parameter is positional.
 ///
-///   **In HTML:** `left`, `center`, and `right` stay on that side; `start` and `end`
-///   follow the text direction. `top`, `horizon`, and `bottom` need free space from a
-///   container, such as a grid row: HTML has no page height to align in. Horizontal
-///   alignment sets `text-align` and `justify-items`; vertical alignment sets
-///   `align-content`. Combined axes apply together; an omitted axis inherits the
-///   surrounding native alignment.
+///   #quote(block: true)[*Note:* `left`, `center`, and `right` stay on that side;
+///   `start` and `end` follow the text direction. `top`, `horizon`, and `bottom` need
+///   free space from a container, such as a grid row: HTML has no page height to align
+///   in. Horizontal alignment sets `text-align` and `justify-items`; vertical alignment
+///   sets `align-content`. Combined axes apply together; an omitted axis inherits the
+///   surrounding native alignment.]
 ///
 /// - body (content): The content to align.
 ///
 ///   This parameter is positional.
 ///
-///   **In HTML:** Selectable HTML content inside a block container. Links and nested
-///   supported layouts keep their behavior. Nested alignment can position a group while
-///   aligning the text inside it differently. No viewport height is added.
+///   #quote(block: true)[*Note:* Selectable HTML content inside a block container.
+///   Links and nested supported layouts keep their behavior. Nested alignment can
+///   position a group while aligning the text inside it differently. No viewport height
+///   is added.]
 ///
 /// -> content
 #let align(..args) = {

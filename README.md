@@ -1,8 +1,9 @@
 # letmeout
 
 Typst layouts for HTML. Import the package and keep calling `grid`, `line`, and
-`align`. Add `#show: letmeout` to also bring `page` settings and `pagebreak` to
-HTML, and use `extras.by-target` where HTML should differ from print. Text, math, links, and images remain ordinary HTML content; the browser
+`align`. Add `#show: letmeout` to also bring `page` settings, `pagebreak`, shapes,
+styled boxes and blocks, spacing, transforms, stacks, columns, and placement to
+HTML, and use `letmeout-extras.by-target` where HTML should differ from print. Text, math, links, and images remain ordinary HTML content; the browser
 controls layout. PDF, PNG, and SVG use Typst's native elements.
 
 ```typ
@@ -42,21 +43,21 @@ on Typst Universe. No external stylesheet or JavaScript is required. `grid`,
 use. Bindings follow Typst's lexical scopes: import in each file that calls the
 functions, before defining helper functions that use them.
 
-A wildcard import adds only `grid`, `line`, `align`, `letmeout`, and the `extras`
+A wildcard import adds only `grid`, `line`, `align`, `letmeout`, and the `letmeout-extras`
 namespace. All optional helpers, color-scheme functions, and native grid aliases
-live inside `extras`:
+live inside `letmeout-extras`:
 
 ```typ
 #import "lib.typ": *
 #show: letmeout
-#show: extras.html-only(page.with(width: auto, margin: 1em))
+#show: letmeout-extras.html-only(page.with(width: auto, margin: 1em))
 ```
 
 Import individual helpers explicitly when you prefer unqualified names:
 
 ```typ
-#import "lib.typ": grid, letmeout, extras
-#import extras: html-only, grid-cell
+#import "lib.typ": grid, letmeout, letmeout-extras
+#import letmeout-extras: html-only, grid-cell
 #show: letmeout
 #show: html-only(page.with(width: auto, margin: 1em))
 #grid(grid-cell[Content])
@@ -93,12 +94,15 @@ parameter's HTML behavior.
   keep plain text. Math keeps Typst’s native MathML without text spans.
 - With `#show: letmeout`, `pagebreak` adds nothing on screen, so the content continues without a gap.
   It becomes a page break when the HTML is printed.
+- With `#show: letmeout`, elements that Typst's HTML export ignores or strips
+  become HTML too. See [More elements](#more-elements).
 
 ### Pages
 
 Put `#show: letmeout` at the top of the document, before anything else, then use
-Typst's own page APIs: `#set page(...)`, `#page(...)[...]`, `#show: page.with(...)`,
-and `#pagebreak()`. A page call or a `set page` that changes the settings starts
+Typst's own page APIs: `#show: page.with(...)`, `#page(...)[...]`, `#set page(...)`,
+and `#pagebreak()`. We recommend `#show: page.with(...)` over `#set page(...)`.
+A page call or a `set page` that changes the settings starts
 a new block. Other set rules do not start blocks, so inline styles stay in
 their paragraph. Paged output is unchanged.
 
@@ -106,7 +110,7 @@ their paragraph. Paged output is unchanged.
 #import "lib.typ": *
 #show: letmeout
 #set document(title: "Report")
-#set page(
+#show: page.with(
   paper: "a5", numbering: "1 / 1",
   header: grid(columns: (1fr, auto), [Report], [2026]),
 )
@@ -119,36 +123,73 @@ their paragraph. Paged output is unchanged.
 Typst still prints "page set rule was ignored" for each page setting in HTML
 export. Packages cannot silence that warning; the settings are applied anyway.
 
-HTML export ignores `h(1fr)`, so use `grid` to spread a header across the
-width, as above.
+HTML has no free space to share, so `h(1fr)` stays ignored; use `grid` to
+spread a header across the width, as above.
+
+`letmeout-extras.page` is Typst's `page` with a note on every parameter about what it does
+in HTML, which editors show on hover. It passes on exactly the arguments you
+give, so `#show: letmeout-extras.page.with(...)` and `#letmeout-extras.page(...)[...]` behave like
+`page` in every output. Typst allows set rules only on its own elements, so
+`#import letmeout-extras: *` shadows `page` and `#set page(...)` then fails with "only
+element functions can be used in set rules". Packages cannot replace that
+message. Use `#show: page.with(...)`, or `#set std.page(...)`.
+
+### More elements
+
+With `#show: letmeout`, these elements also become HTML. Typst's HTML export
+otherwise ignores them, or drops their styling:
+
+| Element | HTML |
+| --- | --- |
+| `rect`, `square`, `circle`, `ellipse` | A box with the content. Fill and stroke are layers behind it, so stroke and `outset` take no space, as in Typst. Per-side strokes, per-corner radii, gradients, and exact dash patterns work. |
+| `box`, `block` | Fill, stroke, radius, inset, outset, width, height, and clip. `block` also maps `breakable: false`, `above`, and `below`; `box` maps a length `baseline`. Without styling they stay Typst's native `<span>` and `<div>`. |
+| `polygon`, `curve` | Native SVG, through `html.frame`. |
+| `h`, `v` | Spacing. A weak `v` collapses with its neighbours' margins, as weak spacing collapses in Typst. |
+| `pad` | Padding; negative sides become negative margins. |
+| `hide` | `visibility: hidden`, so the content keeps its space. |
+| `move`, `rotate`, `scale`, `skew` | CSS offsets and transforms around `origin`. `scale(reflow: true)` with one factor uses CSS `zoom`. |
+| `stack` | A flex box in the stack's direction, with `spacing`, lengths, and fractions between items. |
+| `columns`, `colbreak` | CSS columns, at least `12em` wide, so they collapse on narrow screens. |
+| `place` | Floating content stays in the flow; HTML has no page to float to. Other content is placed in the nearest page body, shape, or styled box or block. |
+| `underline`, `overline`, `strike`, `highlight` | Their stroke color, thickness, dash, and offset, and the highlight's fill and radius. |
+
+Colors follow the reader's light or dark mode, as elsewhere. When CSS cannot
+express something, the element keeps Typst's native output, including its
+"was ignored" warning: `h(1fr)` and `v(1fr)`, `scale` to a length, tilings, and
+paints CSS cannot draw. `repeat` and `layout` need the page geometry and are
+not adapted. `rotate(reflow: true)` and `skew(reflow: true)` draw the transform
+without reflowing. Round shapes inset their content approximately, and dashes
+on mixed per-side strokes become CSS `dashed` or `dotted`. Paged output is
+unchanged.
 
 ### Different settings for HTML
 
-Use `extras.html-only` or `extras.paged-only` with a native `.with()` function as a show rule
+Use `letmeout-extras.html-only` or `letmeout-extras.paged-only` with a native `.with()` function as a show rule
 to apply a wrapper for one export target:
 
 ```typ
 #import "lib.typ": *
 #show: letmeout
-#set page(paper: "a4", margin: 2.5cm)
-#show: extras.html-only(page.with(width: auto, margin: (x: 1em, y: 2em)))
+#show: page.with(paper: "a4", margin: 2.5cm)
+#show: letmeout-extras.html-only(page.with(width: auto, margin: (x: 1em, y: 2em)))
 ```
 
 The PDF keeps its A4 page and 2.5cm margins. HTML fills the available width,
 with `1em` at the sides and `2em` at the top and bottom. Use `margin: 0pt`
-for edge-to-edge content. No separate page-settings API is needed; editors
-provide Typst's own documentation when hovering over `page`.
+for edge-to-edge content. No separate page-settings API is needed. For notes
+on what each setting does in HTML, hover over `letmeout-extras.page`, which behaves
+exactly like `page`.
 
-`extras.paged-only` selects PDF, PNG, and SVG output. Typst exposes these as one
+`letmeout-extras.paged-only` selects PDF, PNG, and SVG output. Typst exposes these as one
 `"paged"` target, so it cannot distinguish PDF from the other paged formats.
 Both shortcuts also accept content:
 
 ```typ
-#extras.html-only[Read the PDF version for print.]
-#extras.paged-only[Printed 2026]
+#letmeout-extras.html-only[Read the PDF version for print.]
+#letmeout-extras.paged-only[Printed 2026]
 ```
 
-Use `extras.by-target(html:, paged:)` when you want both branches in one place.
+Use `letmeout-extras.by-target(html:, paged:)` when you want both branches in one place.
 Content branches select content; function branches return a show rule. A missing
 content branch is empty; a missing function branch leaves the body unchanged.
 
@@ -156,7 +197,7 @@ For several set/show rules at once, use a function. It receives the rest of the
 scope as `body`; return it after applying your rules:
 
 ```typ
-#show: extras.html-only(body => {
+#show: letmeout-extras.html-only(body => {
   set page(width: auto, margin: 1em)
   set par(justify: false)
   show heading: set text(blue)
@@ -178,17 +219,17 @@ example). Place `set document(...)` before the page wrapper, as with native
 Pass content instead of functions to select target-specific content:
 
 ```typ
-#extras.by-target(html: [Read the PDF version for print.], paged: [Printed 2026])
+#letmeout-extras.by-target(html: [Read the PDF version for print.], paged: [Printed 2026])
 ```
 
 Use either content branches or function branches in each call; mixing the two
 is an error. The previous `for-*`, `on-target`, `show-target`, and `on-scheme`
-names remain available for compatibility. `extras.by-color-scheme(light:, dark:)` selects content by color
-scheme; `extras.theme(...)` controls scoped colors and frame rendering.
+names remain available for compatibility. `letmeout-extras.by-color-scheme(light:, dark:)` selects content by color
+scheme; `letmeout-extras.theme(...)` controls scoped colors and frame rendering.
 
 Why not `#context if target() == "html" { ... }`? A set rule inside a context
 block ends with that block, and `letmeout` cannot see page settings inside it.
-The function form of `extras.by-target` lets `#show: letmeout` read those settings.
+The function form of `letmeout-extras.by-target` lets `#show: letmeout` read those settings.
 Without `#show: letmeout`, target selection still works, but HTML page settings
 have no effect, as in plain Typst.
 
@@ -218,14 +259,14 @@ Everything can be tuned:
 )
 
 // Alternative content for each color scheme, such as a logo.
-#extras.by-color-scheme(light: image("logo.svg"), dark: image("logo-dark.svg"))
+#letmeout-extras.by-color-scheme(light: image("logo.svg"), dark: image("logo-dark.svg"))
 
 // Content visible in just one color scheme.
-#extras.light-only[This note is visible in light mode.]
-#extras.dark-only[This note is visible in dark mode.]
+#letmeout-extras.light-only[This note is visible in light mode.]
+#letmeout-extras.dark-only[This note is visible in dark mode.]
 
 // The same settings for one scope: text, fills, strokes, and gradients.
-#extras.theme(
+#letmeout-extras.theme(
   dark-colors: ((black, rgb("ffd479")), (white, rgb("242424"))),
   dark-frames: none,
 )[
@@ -234,10 +275,10 @@ Everything can be tuned:
 ]
 ```
 
-`extras.by-color-scheme`, `extras.light-only`, and `extras.dark-only` select content. Their HTML
+`letmeout-extras.by-color-scheme`, `letmeout-extras.light-only`, and `letmeout-extras.dark-only` select content. Their HTML
 visibility follows the document’s allowed color schemes and the reader’s
-preference. Paged output uses the light branch: `extras.light-only` is included and
-`extras.dark-only` is omitted. Use `extras.theme` for scoped color and frame settings.
+preference. Paged output uses the light branch: `letmeout-extras.light-only` is included and
+`letmeout-extras.dark-only` is omitted. Use `letmeout-extras.theme` for scoped color and frame settings.
 
 Nested themes inherit mappings and replace only the colors they name.
 `dark-frames: auto` (the default) inherits the surrounding frame policy;
@@ -266,9 +307,9 @@ onto a wrapper function. Use the native names for those operations:
 )
 ```
 
-For convenience, `extras` exports native aliases `extras.grid-cell`, `extras.grid-hline`,
-`extras.grid-vline`, `extras.grid-header`, and `extras.grid-footer`. They support `.with()` and native
-set/show syntax. For example, `extras.grid-cell(colspan: 2)[...]` works in both targets.
+For convenience, `letmeout-extras` exports native aliases `letmeout-extras.grid-cell`, `letmeout-extras.grid-hline`,
+`letmeout-extras.grid-vline`, `letmeout-extras.grid-header`, and `letmeout-extras.grid-footer`. They support `.with()` and native
+set/show syntax. For example, `letmeout-extras.grid-cell(colspan: 2)[...]` works in both targets.
 
 Existing uses of `grid.cell(...)`, `set grid(...)`, `set line(...)`, or
 `set align(...)` need qualification with `std` after the import. Ordinary function
@@ -282,7 +323,7 @@ and SVG output against the native functions byte for byte.
 
 ## Development
 
-The structure follows Solveng: `lib.typ` exports the core API, `extras.typ` groups optional helpers, `src/` contains
+The structure follows Solveng: `lib.typ` exports the core API, `letmeout-extras.typ` groups optional helpers, `src/` contains
 implementation modules, `docs/` contains examples and design notes, and `tests/`
 contains regression fixtures.
 

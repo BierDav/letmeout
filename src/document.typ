@@ -276,6 +276,13 @@
 /// Adapts native page settings and screen styling for continuous HTML.
 /// Paged output returns the document body unchanged.
 ///
+/// #quote(block: true)[*Note:* In HTML, also adapts elements that Typst's HTML
+/// export ignores or strips: `rect`, `square`, `circle`, `ellipse`, `polygon`,
+/// `curve`, styled `box` and `block`, `h`, `v`, `pad`, `hide`, `move`, `rotate`,
+/// `scale`, `skew`, `stack`, `columns`, `colbreak`, `place`, and the strokes of
+/// `underline`, `overline`, `strike`, and `highlight`. What CSS cannot express
+/// keeps Typst's native output.]
+///
 /// - body (content): The show rule's body. In HTML, resolves target-specific
 ///   rules, reads native page settings, and renders continuous blocks with
 ///   selectable content. Also preserves text fonts/colors and native MathML.

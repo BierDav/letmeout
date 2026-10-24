@@ -185,7 +185,8 @@
   if s.width != auto { sheet.push("max-width: " + size(s.width)) }
   let header = first and s.header != none
   let footer = last and s.footer != none
-  let body-styles = ("box-sizing: border-box", "display: flow-root", "min-width: 0") + inline
+  // Positioned, so placed content is placed relative to the content area.
+  let body-styles = ("box-sizing: border-box", "display: flow-root", "position: relative", "min-width: 0") + inline
   if first and not header { body-styles.push("padding-top: " + css(s.margin.top)) }
   if last and not footer { body-styles.push("padding-bottom: " + css(s.margin.bottom)) }
   if s.columns > 1 {

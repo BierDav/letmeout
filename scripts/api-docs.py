@@ -201,16 +201,42 @@ def wrap(text, prefix, rest=None):
     return lines
 
 
+# Typst markup that would change a note's meaning, outside of raw text.
+MARKUP = re.compile(r"//|[*_#$<>@\[\]\\~]")
+# Markup that starts a list, heading, or term at the start of a line.
+LINE_START = re.compile(r"(-|\+|=|/|\d+\.)(\s|$)")
+
+
+def escape_markup(text):
+    parts = re.split(r"(`[^`]*`)", text)
+    return "".join(part if part.startswith("`")
+                   else MARKUP.sub(lambda m: "".join("\\" + c for c in m.group(0)), part)
+                   for part in parts)
+
+
+def note(text, prefix, rest=None):
+    """The HTML note as a Typst block quote, which editors such as Tinymist highlight."""
+    rest = prefix if rest is None else rest
+    lines = wrap("#quote(block: true)[*Note:* " + escape_markup(text.strip()) + "]", prefix, rest)
+    ticks = lines[0].count("`")
+    for i in range(1, len(lines)):
+        body = lines[i][len(rest):]
+        if ticks % 2 == 0 and LINE_START.match(body):
+            lines[i] = rest + "\\" + body
+        ticks += body.count("`")
+    return lines
+
+
 def doc_lines(spec, docs):
     paragraphs = list(spec.get("summary", [])) if "summary" in spec else docs["summary"]
     if isinstance(paragraphs, str):
         paragraphs = [paragraphs]
-    if spec.get("html"):
-        paragraphs = paragraphs + ["**In HTML:** " + spec["html"].strip()]
     out = []
     for p in paragraphs:
         out += ["///"] if out else []
         out += wrap(p.strip(), "/// ")
+    if spec.get("html"):
+        out += ["///"] + note(spec["html"], "/// ")
     out.append("///")
     for param in documented(spec, docs):
         kind = ", ".join(param["types"]) + (", ..." if param["variadic"] else "")
@@ -231,7 +257,7 @@ def doc_lines(spec, docs):
         extra = ([f"Default: {default}."] if default else []) + ([f"This parameter is {role}."] if role else [])
         if extra:
             lines += ["///"] + wrap(" ".join(extra), "///   ")
-        lines += ["///"] + wrap("**In HTML:** " + spec["params"][param["name"]].strip(), "///   ")
+        lines += ["///"] + note(spec["params"][param["name"]], "///   ")
         out += lines + ["///"]
     out.append("/// -> " + spec.get("returns", "content"))
     return out
@@ -243,9 +269,14 @@ def documented(spec, docs):
 
 
 def signature_lines(name, spec, docs):
-    params = [p["name"] for p in documented(spec, docs)]
-    return ([f"#let {name}("] + [f"  {p}: inherit," for p in params]
-            + [f") = {spec['signature']}(("] + [f"  {p}: {p}," for p in params] + ["))"])
+    """Named parameters default to `inherit`, so only given arguments reach Typst.
+    Parameters listed in `positional` pass through an argument sink."""
+    positional = spec.get("positional", [])
+    params = [p["name"] for p in documented(spec, docs) if p["name"] not in positional]
+    sink = f"..{positional[0]}" if positional else None
+    return ([f"#let {name}("] + [f"  {p}: inherit," for p in params] + ([f"  {sink},"] if sink else [])
+            + [f") = {spec['signature']}(("] + [f"  {p}: {p}," for p in params]
+            + ([f"), {sink})"] if sink else ["))"]))
 
 
 def check_notes(name, spec, docs):

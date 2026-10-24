@@ -7,6 +7,8 @@
 #   html       how the function behaves in HTML, after the summary
 #   signature  generate a signature with the parameters, passed as one
 #              dictionary to this function (optional)
+#   positional parameters the generated signature passes on through an
+#              argument sink, such as a body (optional)
 #   exclude    Typst parameters the function does not take, with the reason
 #   returns    the return type (default: content)
 #   params     how each parameter behaves in HTML. Every parameter that is not
@@ -16,8 +18,8 @@
 file = "src/grid.typ"
 typst = "layout/grid"
 html = """A CSS Grid. Paged output is Typst's native grid, unchanged. Use \
-`std.grid` for set and show rules, and `extras.grid-cell`, `extras.grid-hline`, `extras.grid-vline`, \
-`extras.grid-header`, and `extras.grid-footer` for its elements."""
+`std.grid` for set and show rules, and `letmeout-extras.grid-cell`, `letmeout-extras.grid-hline`, `letmeout-extras.grid-vline`, \
+`letmeout-extras.grid-header`, and `letmeout-extras.grid-footer` for its elements."""
 
 [grid.params]
 columns = """CSS column tracks. `auto` sizes to the content, fractions share the \
@@ -108,3 +110,51 @@ inherits the surrounding native alignment."""
 body = """Selectable HTML content inside a block container. Links and nested \
 supported layouts keep their behavior. Nested alignment can position a group \
 while aligning the text inside it differently. No viewport height is added."""
+
+[page]
+file = "src/page-api.typ"
+typst = "layout/page"
+signature = "native-page"
+positional = ["body"]
+html = """Typst's own `page`, with these notes on HTML. It passes on exactly the \
+arguments you give, so it behaves like `page` in every output: `letmeout-extras.page(...)[...]` \
+and `show: letmeout-extras.page.with(...)` work as with `page`. Use `set page(...)` for set \
+rules; the package does not shadow `page`. With `#show: letmeout`, HTML export turns \
+page settings into one continuous block per run of equal settings, not a sheet of \
+paper. Without it, Typst ignores page settings in HTML. Paged output is unchanged."""
+
+[page.params]
+paper = """Sets the width and height. The width caps the sheet; the height only \
+resolves vertical percentage margins. Explicit dimensions override it."""
+width = """Maximum width of the centred sheet. On narrower screens the sheet fills \
+the available width. `auto` removes the cap."""
+height = """Does not limit the block's height; the content does. Still resolves \
+vertical percentage and automatic margins, and becomes the width when `flipped`."""
+flipped = "Swaps width and height, so it changes the sheet width."
+margin = """Padding on the sheet, with Typst's defaults, folding, `x`/`y`/`rest`, and \
+ratios. With a fixed width, margins are fractions of the sheet width, so they shrink \
+on narrower screens."""
+bleed = "No effect on screen; there is no trim box."
+binding = """The first page's layout applies, as HTML has no facing pages: an \
+`inside` margin goes left for `left` and right for `right`."""
+columns = """CSS columns with the `columns.gutter` gap. Columns are at least `12em` \
+wide, so they collapse on narrow screens."""
+fill = """Background of the full-width block, following the color scheme. `auto` is \
+transparent, so host colors and dark mode stay."""
+numbering = """Shown in the automatic header or footer through `counter(page)`. HTML \
+is one page, so the number does not advance at page breaks."""
+supplement = "No effect on screen."
+number-align = """The horizontal part aligns the automatic number; `top` puts it in the \
+header, anything else in the footer."""
+header = """A `<header>` before the content, once per block, at the bottom of the top \
+margin. `auto` shows the page number if `number-align` is at the top."""
+header-ascent = "Space below the header content, relative to the top margin."
+footer = """A `<footer>` after the content, once per block, at the top of the bottom \
+margin. `auto` shows the page number unless `number-align` is at the top."""
+footer-descent = "Space above the footer content, relative to the bottom margin."
+background = """A layer behind the content, centred and clipped to the sheet. Hidden \
+from screen readers and clicks."""
+foreground = """A layer above the content, like `background`. Hidden from screen \
+readers and clicks."""
+body = """Its own block with its own settings, inheriting the surrounding ones. \
+Content before and after it forms separate blocks."""

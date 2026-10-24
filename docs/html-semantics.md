@@ -10,7 +10,7 @@ functions, the native grid subelements they adapt, and the native `page` and
 `pagebreak` APIs interpreted by `#show: letmeout`. Native argument validation
 and defaults still apply. The generated comments on the three wrapper functions
 also include Typst's parameter types, defaults, and an HTML note for every
-parameter. Use `std` for native set/show selectors; the `extras.grid-*` aliases
+parameter. Use `std` for native set/show selectors; the `letmeout-extras.grid-*` aliases
 refer to the native grid subelements.
 
 ## Grid
@@ -76,7 +76,7 @@ zero padding, no explicit alignment, transparent fill, or no stroke, respectivel
 `children` are placed row by row, respecting explicit cell coordinates, spans,
 and group boundaries; the emitted DOM is sorted by logical row and column.
 
-### `grid.cell` / `extras.grid-cell`
+### `grid.cell` / `letmeout-extras.grid-cell`
 
 | Field | HTML behavior |
 | --- | --- |
@@ -94,7 +94,7 @@ and group boundaries; the emitted DOM is sorted by logical row and column.
 Native set rules on `std.grid.cell` supply defaults before explicit fields are
 folded in. Cell show-set rules can style the body using its resolved `x`/`y`.
 
-### `grid.hline` / `extras.grid-hline`
+### `grid.hline` / `letmeout-extras.grid-hline`
 
 | Field | HTML behavior |
 | --- | --- |
@@ -104,7 +104,7 @@ folded in. Cell show-set rules can style the body using its resolved `x`/`y`.
 | `stroke` | Decorative stroke overriding cell/grid edges along the range. `none` erases those edges. Later separators replace earlier ones on shared segments. All shared stroke fields below apply. |
 | `position` | `top` selects the edge before row `y`; `bottom` selects the edge after that row. With a gutter these are different edges. `bottom` requires an existing row. |
 
-### `grid.vline` / `extras.grid-vline`
+### `grid.vline` / `letmeout-extras.grid-vline`
 
 | Field | HTML behavior |
 | --- | --- |
@@ -121,7 +121,7 @@ With zero gutters adjoining edges collapse. Explicit separators take priority
 over explicit cell strokes, which take priority over grid defaults. Among cell
 edges of equal priority the thicker wins (later cells win equal thickness).
 
-### `grid.header` / `extras.grid-header` and `grid.footer` / `extras.grid-footer`
+### `grid.header` / `letmeout-extras.grid-header` and `grid.footer` / `letmeout-extras.grid-footer`
 
 | Element / field | HTML behavior |
 | --- | --- |
@@ -222,7 +222,10 @@ The native parameter contracts were checked against Typst's documentation for
 
 ## Page
 
-Page support needs `#show: letmeout` at the top of the document. HTML is one
+Page support needs `#show: letmeout` at the top of the document. We recommend
+`#show: page.with(...)` over `set page`. `letmeout-extras.page` is native `page` with a
+note on each parameter in its doc comment; it passes on only the arguments
+given, so its output is identical in every format. HTML is one
 continuous document, so page settings become one block rather than a series of
 sheets. Content never moves to another page, and the package adds no
 screen-sized pages. A new block starts only where the page settings change:
@@ -313,8 +316,8 @@ on a new sheet when the HTML is printed.
 
 ## Target-specific settings
 
-The target and color-scheme helpers below are exported through `extras`. Use
-`extras.name` or explicitly import selected names with `#import extras: name`.
+The target and color-scheme helpers below are exported through `letmeout-extras`. Use
+`letmeout-extras.name` or explicitly import selected names with `#import letmeout-extras: name`.
 
 
 `by-target(html:, paged:)` accepts either content branches or function
@@ -364,7 +367,7 @@ the remainder of the scope, supplied automatically by the show rule.
 | --- | --- |
 | `body` | Resolves target-specific show rules, reads page settings, emits continuous page blocks, and applies font, color, MathML, and frame handling below. |
 | `color-scheme` | Default `"light dark"` follows the reader. `"light"` or `"dark"` fixes the scheme. Sets CSS `color-scheme` and a `Canvas` background; `none` omits both and emits no dark visibility/frame rules. |
-| `dark-colors` | Default `()`. Array of `(light-color, dark-color)` pairs replacing automatically derived dark variants through CSS custom properties. Applies to colors written by the adapters, including gradient stops; no recoloring of frame internals. Nested `extras.theme` mappings inherit and override by color. |
+| `dark-colors` | Default `()`. Array of `(light-color, dark-color)` pairs replacing automatically derived dark variants through CSS custom properties. Applies to colors written by the adapters, including gradient stops; no recoloring of frame internals. Nested `letmeout-extras.theme` mappings inherit and override by color. |
 | `dark-frames` | Default `"invert"` applies `invert(1) hue-rotate(180deg)` to framed SVG in dark mode. `none` preserves frame colors. The policy inherits through scoped themes. |
 | `css` | Default empty string. Appended to the emitted document stylesheet as supplied; can style emitted classes or override document rules. |
 
@@ -385,3 +388,63 @@ The screen adapter also removes the browser's default body margin and adds dark
 variants for Typst's default raw-code palette. A custom raw theme keeps its own
 colors. These screen rules require `#show: letmeout`; the three layout wrappers
 work without it. Paged bodies and native element arguments are passed through.
+
+## More elements
+
+With `#show: letmeout`, show rules adapt these native elements in HTML. Inside
+`html.frame` and in paged output they stay native. Each adapter keeps Typst's
+native HTML, including the "was ignored" warning, for anything it cannot
+express; it never fails where Typst would not. Colors use the document's
+light/dark policy.
+
+### Shapes, boxes, and blocks
+
+`rect`, `square`, `circle`, and `ellipse` become a `div` (class
+`letmeout-<name>`); `box` a `span` with `display: inline-block` and `block` a
+`div` (classes `letmeout-box`, `letmeout-block`). The content stays selectable
+HTML. Paint sits in an absolutely positioned `span.letmeout-shape-paint` behind
+it, so neither stroke nor outset changes the layout, as in Typst.
+
+| Field | HTML behavior |
+| --- | --- |
+| `width`, `height` | CSS sizes, with the box including the inset. Shapes without content get Typst's default size (45×30pt, squares and circles 30pt). A shape with content and automatic width fits its content. Fractions are dropped. |
+| `size`, `radius` (circle) | Become `width` and `height`; `square` and `circle` keep `aspect-ratio: 1` when a side is automatic. |
+| `fill` | Background of the paint layer. Colors and supported gradients; other paints keep native output. |
+| `stroke` | Centred on the outline. `auto` on shapes is 1pt black without a fill and none with one. Uniform dashed strokes use an SVG mask with the exact pattern; gradient strokes without dashes use a masked ring; other strokes use CSS borders per side, where dashes become `dashed` or `dotted`. |
+| `radius` | Per-corner CSS `border-radius`. Ratios are relative to half the shorter side, through `cqmin` on the paint layer. |
+| `inset` | Padding. Circles and ellipses add the margin of the inscribed rectangle, exactly for fixed sizes and approximately (`0.25em`) for automatic ones. |
+| `outset` | Extends the paint layer without changing the layout. |
+| `clip` | `overflow: clip` with the corner radii. |
+| `block.breakable` | `false` emits `break-inside: avoid`. |
+| `block.above`, `block.below` | Lengths become `margin-top` and `margin-bottom`, which collapse like Typst's block spacing. |
+| `box.baseline` | A length shift becomes `vertical-align`; a ratio needs a length height. |
+| `block.sticky`, `block.spacing` | No effect. |
+
+A `box` or `block` without fill, stroke, inset, size, clip, or spacing keeps
+Typst's native `<span>` or `<div>`.
+
+### Spacing and layout
+
+| Element | HTML behavior |
+| --- | --- |
+| `h` | An empty `span.letmeout-h` with `margin-inline-start`; negative amounts work. Fractions stay native. |
+| `v` | An empty `div.letmeout-v` with a height. A weak or negative amount becomes `margin-top`, which collapses with neighbouring margins like weak spacing. Fractions stay native. |
+| `pad` | `div.letmeout-pad` with padding per side; negative sides become negative margins. |
+| `hide` | `visibility: hidden` on a `span`, or a `div` for block content. The content keeps its space and is hidden from screen readers. |
+| `move` | `position: relative` with `left: dx` and `top: dy`; ratios use the container. |
+| `rotate`, `skew` | CSS `transform` around `origin`, on a block as wide as its content. `reflow` is not applied. |
+| `scale` | CSS `scale(x, y)` around `origin`. With `reflow: true` and one positive factor, CSS `zoom` reflows the layout. Lengths need the content's size and stay native. |
+| `stack` | A flex box: `ltr`/`rtl` are physical, also in RTL text, `ttb`/`btt` vertical. `spacing` goes between adjacent content; length and fraction children become fixed and growing spacers. |
+| `columns` | `column-count` with `column-width: 12em` and the gutter as `column-gap`, so columns collapse on narrow screens. |
+| `colbreak` | An empty `div` with `break-after: column`. |
+| `place` | `float: true` keeps the content in the flow with `clearance` as margin, aligned horizontally. Otherwise `position: absolute` in the nearest positioned container: the page body, a shape, or a styled box or block. Without a vertical alignment the content stays at its height in the flow. `dx` and `dy` become `translate`. |
+| `polygon`, `curve` | Native SVG in an `html.frame`, following the frame dark-mode policy. |
+
+`repeat` and `layout` need Typst's region sizes and are not adapted.
+
+### Text decorations
+
+| Element | HTML behavior |
+| --- | --- |
+| `underline`, `overline`, `strike` | With a custom `stroke` or `offset`, a `span` with `text-decoration-color`, `-thickness`, `-style` (`dashed`/`dotted`), and `text-underline-offset`. Gradient paint and the defaults keep native output. `extent`, `evade`, and `background` have no effect. |
+| `highlight` | A `mark` with the fill as background and the text color kept. Lengths in `radius` and `extent` become `border-radius` and `padding-inline`. `stroke`, `top-edge`, and `bottom-edge` have no effect. |

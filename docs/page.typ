@@ -7,14 +7,14 @@
   background: [DRAFT],
 )
 // Smaller side margins on screens. The PDF keeps the A5 defaults.
-#show: extras.html-only(page.with(margin: (x: 1.5cm)))
+#show: letmeout-extras.html-only(page.with(margin: (x: 1.5cm)))
 
 #page(fill: rgb("dce7f5"), header: none, numbering: none, background: none)[
   #align(center)[Title page]
 ]
 
 = Introduction
-#extras.by-target(html: [You are reading the web version.], paged: [You are reading the PDF.])
+#letmeout-extras.by-target(html: [You are reading the web version.], paged: [You are reading the PDF.])
 
 The page width becomes the width of a centred sheet, and its margins shrink on
 narrow screens. The header comes before the content and the footer after it.

@@ -2,6 +2,7 @@
 // Typst's HTML export drops, colors that follow the reader's light or dark
 // mode, and no default margin around the page blocks.
 #import "css.typ": color-css, dark-properties
+#import "adapters.typ": adapters
 
 // The colors of Typst's default raw theme (typst-library's `RAW_THEME`).
 #let raw-palette = ("#16718d", "#198810", "#1d6c76", "#301414", "#4b69c6", "#6b6b6f", "#74747c", "#8b41b1", "#b60157", "#d73948")
@@ -92,5 +93,7 @@
   // A custom element keeps frames inline or block, wherever Typst put them.
   show html.frame: it => html.elem("letmeout-frame", it)
   show image: image-rule
+  // Layout elements and shapes that Typst's HTML export ignores.
+  show: adapters
   body
 }

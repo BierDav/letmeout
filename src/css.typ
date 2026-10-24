@@ -1,16 +1,19 @@
+// A number for CSS. Typst writes negative numbers with a Unicode minus sign.
+#let num(value) = str(value).replace("\u{2212}", "-")
+
 // Preserve physical, font-relative, and percentage components as CSS lengths.
 #let size(value, percent-unit: "%") = {
   if value == auto { return "auto" }
-  if type(value) == fraction { return str(value / 1fr) + "fr" }
-  if type(value) == ratio { return str(value / 1%) + percent-unit }
+  if type(value) == fraction { return num(value / 1fr) + "fr" }
+  if type(value) == ratio { return num(value / 1%) + percent-unit }
   if type(value) == relative {
     if value.ratio == 0% { return size(value.length) }
     if value.length == 0pt { return size(value.ratio, percent-unit: percent-unit) }
     return "calc(" + size(value.length) + " + " + size(value.ratio, percent-unit: percent-unit) + ")"
   }
   assert(type(value) == length, message: "letmeout: unsupported CSS size " + repr(value))
-  let absolute = str(value.abs.pt()) + "pt"
-  let em = str(value.em) + "em"
+  let absolute = num(value.abs.pt()) + "pt"
+  let em = num(value.em) + "em"
   if value.em == 0 { absolute }
   else if value.abs == 0pt { em }
   else { "calc(" + absolute + " + " + em + ")" }
@@ -86,10 +89,10 @@
     message: "letmeout: parent-relative gradients need an explicit HTML background on the parent")
   let stops = gradient-stops(value, role)
   if value.kind() == gradient.linear {
-    "linear-gradient(" + str(value.angle().deg() + 90) + "deg, " + stops + ")"
+    "linear-gradient(" + num(value.angle().deg() + 90) + "deg, " + stops + ")"
   } else if value.kind() == gradient.conic {
     let c = value.center()
-    "conic-gradient(from " + str(value.angle().deg() + 90) + "deg at " + size(c.at(0)) + " " + size(c.at(1)) + ", " + stops + ")"
+    "conic-gradient(from " + num(value.angle().deg() + 90) + "deg at " + size(c.at(0)) + " " + size(c.at(1)) + ", " + stops + ")"
   } else {
     assert(value.focal-center() == value.center() and value.focal-radius() == 0%,
       message: "letmeout: off-center radial gradient focal circles have no CSS background equivalent")

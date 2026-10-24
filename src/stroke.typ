@@ -10,8 +10,8 @@
   source
 }
 
-#let stroke-html(value, vertical: false, extra: "") = {
-  if value == none { return [] }
+// SVG presentation attributes for a resolved stroke, painted white for a mask.
+#let svg-stroke-attrs(value) = {
   let thickness = value.thickness.to-absolute()
   let attrs = (
     "stroke='white'", "fill='none'", "stroke-width='" + size(thickness) + "'",
@@ -23,6 +23,14 @@
     attrs.push("stroke-dasharray='" + pattern.join(" ") + "'")
     attrs.push("stroke-dashoffset='" + size(value.dash.phase.to-absolute()) + "'")
   }
+  attrs.join(" ")
+}
+
+#let mask-url(source) = "url(\"data:image/svg+xml," + url-encode(source) + "\")"
+
+#let stroke-html(value, vertical: false, extra: "") = {
+  if value == none { return [] }
+  let thickness = value.thickness.to-absolute()
   // Give caps a half-stroke of canvas outside each geometric endpoint.
   let cap = size(thickness / 2)
   let coord = if vertical { "y" } else { "x" }
@@ -31,8 +39,8 @@
     else { "x1='0' y1='50%' x2='100%' y2='50%'" }
   let source = ("<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><svg "
     + coord + "='" + cap + "' width='100%' height='100%' style='overflow:visible;" + dimension + ":calc(100% - " + size(thickness) + ")'>"
-    + "<line " + coords + " " + attrs.join(" ") + "/></svg></svg>")
-  let mask = "url(\"data:image/svg+xml," + url-encode(source) + "\")"
+    + "<line " + coords + " " + svg-stroke-attrs(value) + "/></svg></svg>")
+  let mask = mask-url(source)
   let offset = if vertical { "top" } else { "left" }
   let inner = html.elem("span", attrs: (
     class: "letmeout-stroke-paint", style:

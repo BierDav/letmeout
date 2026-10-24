@@ -15,7 +15,7 @@ OUTPUT.mkdir(exist_ok=True)
 PAGE_WARNING = "page set rule was ignored"
 
 
-def compile_source(source, name, fmt, success=True, page_rules=False):
+def compile_source(source, name, fmt, success=True, page_rules=False, ignored=()):
     output = OUTPUT / f"{name}.{fmt}"
     result = subprocess.run(
         ["typst", "compile", "--root", str(ROOT), "--features", "html",
@@ -28,6 +28,8 @@ def compile_source(source, name, fmt, success=True, page_rules=False):
         stderr = result.stderr
         if page_rules:
             stderr = "\n".join(line for line in stderr.splitlines() if PAGE_WARNING not in line)
+        for element in ignored:
+            stderr = "\n".join(line for line in stderr.splitlines() if f"{element} was ignored" not in line)
         assert "was ignored" not in stderr, result.stderr
     else:
         assert result.returncode != 0, f"{name} unexpectedly succeeded"
@@ -55,23 +57,25 @@ class Elements(HTMLParser):
         self.labels.append(data)
 
 
-IMPORT = '#import "/lib.typ": *\n#import extras: *\n'
-# A wildcard import exposes only the layout overrides, letmeout, and extras.
+# A wildcard import exposes only the layout overrides, letmeout, and letmeout-extras.
 # Existing helper names must survive that import without being overwritten.
 helper_names = ("theme", "by-target", "html-only", "paged-only", "by-color-scheme",
                 "light-only", "dark-only", "grid-cell", "grid-header", "grid-hline",
                 "grid-vline", "grid-footer", "for-target", "for-html", "for-paged",
                 "for-scheme", "on-target", "show-target", "on-scheme")
+# Every helper except `letmeout-extras.page`: a wildcard import of letmeout-extras would shadow
+# `page`, and the fixtures use `set page`.
+IMPORT = '#import "/lib.typ": *\n#import letmeout-extras: ' + ", ".join(helper_names) + '\n'
 namespace_probe = "".join(f"#let {name} = 42\n" for name in helper_names)
 namespace_probe += '#import "/lib.typ": *\n'
 namespace_probe += "".join(f"#assert({name} == 42)\n" for name in helper_names)
-namespace_probe += '#show: letmeout\n#show: extras.html-only(page.with(width: auto, margin: 1em))\n'
-namespace_probe += '#grid(columns: 1, extras.grid-cell[scoped cell])\n#line()\n#align(center)[scoped alignment]'
+namespace_probe += '#show: letmeout\n#show: letmeout-extras.html-only(page.with(width: auto, margin: 1em))\n'
+namespace_probe += '#grid(columns: 1, letmeout-extras.grid-cell[scoped cell])\n#line()\n#align(center)[scoped alignment]'
 namespace_html, _ = compile_source(namespace_probe, "extras-namespace", "html", page_rules=True)
 assert not re.search(r'class="letmeout-page-sheet"[^>]*max-width:', namespace_html.read_text())
 assert 'scoped cell' in namespace_html.read_text()
 # Individual imports can come from the namespace, including native set syntax.
-selective_source = ('#import "/lib.typ": *\n#import extras: html-only, grid-cell\n'
+selective_source = ('#import "/lib.typ": *\n#import letmeout-extras: html-only, grid-cell\n'
                     '#show: letmeout\n#show: html-only(page.with(width: auto))\n'
                     '#set grid-cell(inset: 3pt)\n#grid(grid-cell[selected helper])')
 selective_html, _ = compile_source(selective_source, "extras-selective", "html", page_rules=True)
@@ -479,9 +483,66 @@ compile_source('#import "/src/papers.typ": papers\n#for (name, size) in papers {
                '  page(paper: name, context assert(std.page.width == size.at(0) and std.page.height == size.at(1), message: name))\n}',
                "papers", "pdf")
 
+# `show: letmeout` adapts elements that Typst's HTML export ignores.
+adapters_fixture = (ROOT / "tests/adapters/test.typ").read_text()
+adapters_html, _ = compile_source(IMPORT + "#show: letmeout\n" + adapters_fixture, "adapters", "html", page_rules=True, ignored=("h",))
+adapters_text = adapters_html.read_text()
+for cls in ("letmeout-h", "letmeout-v", "letmeout-pad", "letmeout-hide", "letmeout-rect", "letmeout-square",
+            "letmeout-circle", "letmeout-ellipse", "letmeout-shape-paint", "letmeout-box", "letmeout-block",
+            "letmeout-rotate", "letmeout-scale", "letmeout-skew", "letmeout-move", "letmeout-stack",
+            "letmeout-stack-space", "letmeout-columns", "letmeout-colbreak", "letmeout-place"):
+    assert f'class="{cls}"' in adapters_text, cls
+for css in ("margin-inline-start: 28.346456692913385pt", "margin-inline-start: -2pt",
+            "margin-top: -2pt", "padding-left: 28.346456692913385pt", "visibility: hidden", "transform: rotate(30deg)",
+            "transform: scale(1.5, 1)", "zoom: 1.5", "transform: skew(-12deg, 0deg)", "left: 5pt; top: 5pt",
+            "flex-direction: row", "flex-direction: column", "flex-direction: row-reverse", "flex: 1 1 0",
+            "column-count: 2", "break-after: column", "position: absolute", "right: 0; bottom: 0",
+            "margin-block: 1em", "border-radius: 25cqmin",
+            "mask-composite: exclude", "mask-image: url(", "break-inside: avoid", "overflow: clip",
+            "vertical-align: calc(-1 * 2pt)", "text-decoration-thickness: 1.5pt", "text-underline-offset: 2pt",
+            "text-decoration-style: dotted", "text-decoration-line: line-through", "width: 28.346456692913385pt",
+            "height: 28.346456692913385pt", "inset: calc(-1 * 3pt) calc(-1 * 3pt)"):
+    assert css in adapters_text, css
+assert "\u2212" not in adapters_text, "negative numbers use an ASCII minus"
+assert adapters_text.count("<letmeout-frame>") == 2, "polygon and curve become frames"
+assert '<div>A plain block.</div>' in adapters_text and '<span style="display: inline-block">plain box</span>' in adapters_text
+assert '<span style="text-decoration: underline">native</span>' in adapters_text
+assert adapters_text.count('class="letmeout-hide"') == 2 and '<div class="letmeout-hide"' in adapters_text
+# Paged output is unchanged by the adapters.
+for fmt in ("pdf", "png", "svg"):
+    native, _ = compile_source(adapters_fixture, "adapters-native", fmt)
+    patched, _ = compile_source(IMPORT + "#show: letmeout\n" + adapters_fixture, "adapters", fmt)
+    assert native.read_bytes() == patched.read_bytes(), f"adapters changed {fmt}"
+# What CSS cannot express keeps Typst's native HTML, with its warning.
+fallback, stderr = compile_source(IMPORT + "#show: letmeout\n#rect(fill: tiling(size: (5pt, 5pt), square(size: 2pt)))\n"
+                                  "#h(1fr) #v(1fr) #scale(x: 2cm)[s] #box(fill: tiling(size: (5pt, 5pt), square(size: 2pt)))[t]",
+                                  "adapters-fallback", "html", ignored=("rect", "h", "v", "scale"))
+for element in ("rect", "h", "v", "scale"):
+    assert f"{element} was ignored" in stderr, element
+assert '<span style="display: inline-block">t</span>' in fallback.read_text()
+# Without `show: letmeout`, Typst's native HTML is unchanged.
+plain_adapters, stderr = compile_source(IMPORT + "#rect[r] #pad(1em)[p]", "adapters-plain", "html", ignored=("rect", "pad"))
+assert "letmeout-" not in plain_adapters.read_text() and "rect was ignored" in stderr
+
+# `letmeout-extras.page` is native `page`, with HTML notes in its documentation.
+page_api = ('#import "/lib.typ": *\n#show: letmeout\n#show: letmeout-extras.page.with(paper: "a5", margin: 1cm, numbering: "1")\n'
+            'A\n#letmeout-extras.page(fill: aqua, header: [H])[B]\nC')
+page_native = ('#import "/lib.typ": *\n#show: letmeout\n#show: page.with(paper: "a5", margin: 1cm, numbering: "1")\n'
+               'A\n#page(fill: aqua, header: [H])[B]\nC')
+for fmt in ("pdf", "png", "svg", "html"):
+    native, _ = compile_source(page_native, "page-api-native", fmt, page_rules=True)
+    wrapped, _ = compile_source(page_api, "page-api", fmt, page_rules=True)
+    assert native.read_bytes() == wrapped.read_bytes(), f"letmeout-extras.page changed {fmt}"
+# Only element functions take set rules, so a wildcard import of letmeout-extras breaks `set page`.
+_, error = compile_source('#import "/lib.typ": *\n#import letmeout-extras: *\n#set page(margin: 1cm)\nA', "page-shadowed", "pdf", success=False)
+assert "only element functions" in error
+compile_source('#import "/lib.typ": *\n#import letmeout-extras: *\n#set std.page(margin: 1cm)\nA', "page-std", "pdf")
+
 print("PASS: HTML grid, line, align; content, styling, frames, paints, and diagnostics")
 print("PASS: show: letmeout with set page, nested pages, pagebreaks, and paper sizes")
 print("PASS: show: letmeout styles the screen: margin, color scheme, fonts, and frames")
 print("PASS: scoped themes, fluid HTML pages, and native MathML for scripts, cases, matrices, fractions, roots, and accents")
 print("PASS: by-target, html-only, paged-only, compatibility aliases, and native target page wrappers")
+print("PASS: show: letmeout adapts shapes, boxes, spacing, transforms, stacks, columns, placement, and decorations")
+print("PASS: letmeout-extras.page matches native page in every format")
 print("PASS: PDF, PNG, and SVG identical to native Typst; styling and cells preserved")
