@@ -1,0 +1,109 @@
+# What letmeout's functions do in HTML, for the doc comments that
+# scripts/api-docs.py writes from Typst's documentation.
+#
+#   file       the source file with the definition
+#   typst      the Typst docs page, below https://typst.app/docs/reference/
+#   summary    replaces Typst's summary (optional)
+#   html       how the function behaves in HTML, after the summary
+#   signature  generate a signature with the parameters, passed as one
+#              dictionary to this function (optional)
+#   exclude    Typst parameters the function does not take, with the reason
+#   returns    the return type (default: content)
+#   params     how each parameter behaves in HTML. Every parameter that is not
+#              excluded needs one.
+
+[grid]
+file = "src/grid.typ"
+typst = "layout/grid"
+html = """A CSS Grid. Paged output is Typst's native grid, unchanged. Use \
+`std.grid` for set and show rules, and `grid-cell`, `grid-hline`, `grid-vline`, \
+`grid-header`, and `grid-footer` for its elements."""
+
+[grid.params]
+columns = """CSS column tracks. `auto` sizes to the content, fractions share the \
+free width, and lengths and percentages keep their units."""
+rows = "CSS row tracks. The last one repeats for rows beyond the list."
+gutter = """CSS gaps. Varying, `auto`, or fractional gutters become tracks \
+between the content tracks."""
+column-gutter = "Like `gutter`, between columns. Takes precedence over `gutter`."
+row-gutter = "Like `gutter`, between rows. Takes precedence over `gutter`."
+inset = "Cell padding."
+align = "Text alignment and CSS alignment inside each cell, on both axes."
+fill = """CSS backgrounds. Colours and linear, conic, and radial gradients work; \
+tilings, focal points, and parent-relative gradients fail with an error."""
+stroke = """Vector edges painted by CSS, with thickness, caps, dashes, and \
+gradients. Explicit `none` removes an edge."""
+children = """Cells in row-major order. The page source follows the visual \
+order, so screen readers read cells as they appear. Headers and footers render \
+once: a screen has no page boundaries to repeat them at."""
+
+[line]
+file = "src/line.typ"
+typst = "visualize/line"
+html = """An SVG stroke mask painted by CSS, hidden from screen readers. Paged \
+output is Typst's native line, unchanged. Use `std.line` for set and show rules."""
+
+[line.params]
+start = "Percentages follow the width of the surrounding container."
+end = "Percentages follow the width of the surrounding container."
+length = "Percentages follow the width of the surrounding container."
+angle = "Rotates the line with CSS."
+stroke = "Paint, thickness, caps, dashes, and dash phase."
+
+[align]
+file = "src/align.typ"
+typst = "layout/align"
+html = """A block that aligns its content with CSS. Paged output is Typst's \
+native alignment, unchanged. Use `std.align` for set and show rules."""
+
+[align.params]
+alignment = """`left`, `center`, and `right` stay on that side; `start` and \
+`end` follow the text direction. `top`, `horizon`, and `bottom` need free \
+space from a container, such as a grid row: HTML has no page height to align \
+in."""
+body = "The content of the block."
+
+[html-page]
+file = "src/target.typ"
+typst = "layout/page"
+signature = "html-page-rule"
+returns = "function"
+exclude.body = "html-page is a show rule; its body is the rest of the scope."
+summary = [
+  """Page settings for HTML only, as a show rule: \
+`#show: html-page(margin: 1em)`.""",
+  """It works like a `#set page(..)` that only HTML export sees: it applies to \
+the rest of the scope, changes only the settings it names, and a later \
+`set page` overrides it, also in HTML. Paged output ignores it. It needs \
+`#show: letmeout` at the top of the document.""",
+  """The parameters are those of Typst's `page`, with Typst's docs. A \
+parameter that is not given keeps the surrounding page setting.""",
+]
+
+[html-page.params]
+paper = "Sets the width of the sheet. HTML has no page height."
+width = """The maximum width of the centred sheet. Narrower screens show a \
+narrower sheet. `auto` fills the screen."""
+height = "No effect. The block is as tall as its content."
+flipped = "Swaps width and height, so it changes the width of the sheet."
+margin = """Padding inside the sheet. With a fixed width, margins scale with \
+the sheet: they equal the given length at full width and shrink on narrow \
+screens."""
+bleed = "No effect."
+binding = """Decides which side the `inside` margin is on. A screen shows one \
+page, so this is the first page's side."""
+columns = """CSS columns, at least `12em` wide, so they collapse into one on \
+narrow screens."""
+fill = """Background of the full-width block. `auto` is transparent, so the \
+site's colours show through."""
+numbering = """Shown in the automatic header or footer. The page counter does \
+not advance: the HTML is one page."""
+supplement = "No effect on screen."
+number-align = "Places the automatic number in the header or the footer."
+header = "A `<header>` before the content, once per block."
+header-ascent = "Space between the header and the content."
+footer = "A `<footer>` after the content, once per block."
+footer-descent = "Space between the content and the footer."
+background = "A layer behind the content, hidden from screen readers."
+foreground = """A layer above the content, hidden from screen readers. It does \
+not catch clicks."""
