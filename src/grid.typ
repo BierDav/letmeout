@@ -1,4 +1,5 @@
 #import "bridge.typ": bridge
+#import "scroll.typ": wide, scroll
 #import "css.typ": size, repeated, tracks, paint, sides, alignment-styles, direction, fold-alignment
 #import "stroke.typ": stroke-html
 #import "grid-strokes.typ": resolve-strokes
@@ -320,4 +321,6 @@
 ///   supported layouts remain selectable HTML.]
 ///
 /// -> content
-#let grid(..args) = bridge(std.grid(..args), std.grid, html-grid)
+#let grid(..args) = bridge(std.grid(..args), std.grid, it => {
+  if wide(it) { scroll(html-grid(it)) } else { html-grid(it) }
+})

@@ -6,8 +6,12 @@
 #import "shapes.typ": shape-rule, container-rule, paintable, corners
 #import "layout.typ": h-rule, v-rule, pad-rule, hide-rule, move-rule, rotate-rule, skew-rule, scale-rule, stack-rule, columns-rule, colbreak-rule, place-rule, frame-rule
 
+// Equations set this as their supplement, so rules can tell they run inside MathML.
+#let math-marker = [#metadata(none)<letmeout-math>]
+
+// Inside an equation, every element stays native: HTML elements are not valid MathML.
 #let adapt(render) = it => context {
-  if target() != "html" { return it }
+  if target() != "html" or math.equation.supplement == math-marker { return it }
   let out = render(it)
   if out == none { it } else { out }
 }

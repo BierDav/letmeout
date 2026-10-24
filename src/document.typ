@@ -8,6 +8,7 @@
 #import "target.typ": resolve
 #import "page.typ": kind, visible-count, merge-args, settings, section, html-pagebreak
 #import "screen.typ": screen, screen-style
+#import "scroll.typ": group-wide
 
 #let probe-label = <letmeout-probe>
 // Start and end of a `context` item, and page settings found inside one.
@@ -193,7 +194,7 @@
   if visible-count(item.body) == 0 { return item.body }
   let s = settings(merge-args((:), item.info.key))
   s.gutter = item.info.gutter
-  section(s, item.body, true, true, lang: item.info.lang, dir: item.info.dir)
+  section(s, group-wide(item.body), true, true, lang: item.info.lang, dir: item.info.dir)
 }
 
 // Render runs of equal page settings as blocks. A style node whose subtree

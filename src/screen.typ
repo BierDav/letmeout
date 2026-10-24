@@ -2,7 +2,8 @@
 // Typst's HTML export drops, colors that follow the reader's light or dark
 // mode, and no default margin around the page blocks.
 #import "css.typ": color-css, dark-properties
-#import "adapters.typ": adapters
+#import "adapters.typ": adapters, math-marker
+#import "scroll.typ": scroll-css, scroll-rules
 
 // The colors of Typst's default raw theme (typst-library's `RAW_THEME`).
 #let raw-palette = ("#16718d", "#198810", "#1d6c76", "#301414", "#4b69c6", "#6b6b6f", "#74747c", "#8b41b1", "#b60157", "#d73948")
@@ -67,11 +68,10 @@
   }
   css.push("letmeout-frame { display: contents; }")
   css.push(image-css)
+  css.push(scroll-css)
   css.push(options.css)
   html.elem("style", css.filter(rule => rule != "").join("\n"))
 }
-
-#let math-marker = [#metadata(none)<letmeout-math>]
 
 // Show rules for the document body. `root` holds the font and fill in effect at its start.
 #let screen(root, body) = {
@@ -95,5 +95,6 @@
   show image: image-rule
   // Layout elements and shapes that Typst's HTML export ignores.
   show: adapters
+  show: scroll-rules
   body
 }

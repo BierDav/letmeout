@@ -264,7 +264,7 @@ extra, _ = compile_source(IMPORT + '#show: letmeout.with(dark-frames: none, css:
 assert "p { hyphens: auto }" in extra.read_text() and ":root { --letmeout-dark-frame-filter: none; }" in extra.read_text()
 only_light, _ = compile_source(IMPORT + '#by-color-scheme(light: [L], dark: [D])\n#theme(dark-colors: ((black, white),))[x]', "scheme-paged", "pdf")
 light, _ = compile_source(IMPORT + '#show: letmeout.with(color-scheme: "light")\nA', "screen-light", "html")
-assert "color-scheme: light;" in light.read_text() and "@media" not in light.read_text()
+assert "color-scheme: light;" in light.read_text() and "prefers-color-scheme" not in light.read_text()
 plain_scheme, _ = compile_source(IMPORT + '#show: letmeout.with(color-scheme: none)\nA', "screen-none", "html")
 assert "color-scheme" not in plain_scheme.read_text()
 
@@ -291,12 +291,13 @@ $ f(x) = cases(x^2 & "if" x >= 0, -x & "otherwise") $
 $ sum_(i=1)^n i + frac(1, 2) + sqrt(x) $
 $ mat(1, 2; 3, 4) $
 $ hat(x) + vec(a, b) $
+$ integral_0^1 x dif x + a #h(1em) b $
 After math #text(font: "Menlo", fill: red)[styled text].
 '''
 native_math, _ = compile_source(math_fixture, "math-native", "html")
 patched_math, _ = compile_source(IMPORT + '#show: letmeout\n' + math_fixture, "math-patched", "html")
 math_blocks = lambda path: re.findall(r"<math\b.*?</math>", path.read_text(), re.S)
-assert len(math_blocks(native_math)) == 6
+assert len(math_blocks(native_math)) == 7
 def math_structure(source):
     # Contextual show rules can add an inert mrow around a single token.
     def tree(node):
@@ -306,17 +307,94 @@ def math_structure(source):
         return (node.tag, tuple(sorted(node.attrib.items())), node.text or "", children)
     return tree(ET.fromstring(source))
 
-assert [math_structure(m) for m in math_blocks(native_math)] == [math_structure(m) for m in math_blocks(patched_math)], "text styling changed MathML tokens"
+assert [math_structure(m) for m in math_blocks(native_math)] == [math_structure(m) for m in math_blocks(patched_math)], "letmeout rules changed MathML tokens"
 assert "<span" not in "".join(math_blocks(patched_math)), "HTML spans inside MathML"
 assert re.search(r'<span style="font-family: &quot;menlo&quot;; color: [^"]+">styled text</span>', patched_math.read_text()), "text styling did not resume after math"
 # Marking math must not need extra layout passes, nor change what references to an equation say.
 numbered, numbered_err = compile_source(IMPORT + '#show: letmeout\n#set math.equation(numbering: "(1)")\n' + math_fixture + '$ y = 2 $ <eq>\nSee @eq.\n', "math-numbered", "html")
 assert "did not converge" not in numbered_err, numbered_err
-assert re.search(r'<a href="#eq">Equation\s5</a>', numbered.read_text()), "equation references lost their supplement"
+assert re.search(r'<a href="#eq">Equation\s6</a>', numbered.read_text()), "equation references lost their supplement"
 for fmt in ("pdf", "svg"):
     native, _ = compile_source(math_fixture, "math-native", fmt)
     patched, _ = compile_source(IMPORT + '#show: letmeout\n' + math_fixture, "math-patched", fmt)
     assert native.read_bytes() == patched.read_bytes(), f"math {fmt} changed"
+
+# Wide content scrolls sideways in its own area, never the page. Neighbouring
+# wide blocks share one scroll area.
+class Tree(HTMLParser):
+    VOID = {"meta", "img", "br", "hr", "input", "link", "mspace", "none", "mprescripts"}
+    def __init__(self):
+        super().__init__()
+        self.root = {"tag": "root", "attrs": {}, "children": [], "text": ""}
+        self.stack = [self.root]
+    def handle_starttag(self, tag, attrs):
+        node = {"tag": tag, "attrs": dict(attrs), "children": [], "text": ""}
+        self.stack[-1]["children"].append(node)
+        if tag not in self.VOID:
+            self.stack.append(node)
+    def handle_endtag(self, tag):
+        while len(self.stack) > 1 and self.stack.pop()["tag"] != tag:
+            pass
+    def handle_data(self, data):
+        for node in self.stack:
+            node["text"] += data
+
+def tree(path):
+    parser = Tree()
+    parser.feed(path.read_text())
+    return parser.root
+
+def walk(node, inside=False):
+    """Yields (node, whether it is inside a scroll area) in document order."""
+    for child in node["children"]:
+        yield child, inside
+        yield from walk(child, inside or child["attrs"].get("class", "").startswith("letmeout-scroll"))
+
+def classes(node):
+    return node["attrs"].get("class", "").split()
+
+def bleed(node):
+    return re.search(r"--letmeout-bleed: ([^;\"]+)", node["attrs"].get("style", "")).group(1)
+
+scroll_fixture = (
+    'Before.\n$ a $\n$ b $\n```\ncode\n```\n#table[t]\n'
+    '#grid(columns: (300pt, 300pt))[g][h]\n#rect(width: 500pt, stroke: 4pt, outset: 2pt)[r]\n'
+    'Middle.\n$ c $\nAfter.\n#grid[$ d $]\nText #box(width: 800pt)[wide box] more.\n'
+    '#block(width: 50%, fill: aqua)[relative]\n#rect[fits]\n#set rect(width: 600pt)\n#rect[set]\n'
+    '#show math.equation.where(block: true): it => if it.body == $e$.body { $ e e $ } else { it }\n$ e $\n')
+scroll_html, _ = compile_source(IMPORT + '#show: letmeout\n' + scroll_fixture, "scroll", "html")
+scroll_text = scroll_html.read_text()
+nodes = list(walk(tree(scroll_html)))
+outer = [n for n, inside in nodes if not inside and "letmeout-scroll" in classes(n)]
+def wide_parts(area):
+    found = []
+    for n, _ in walk(area):
+        c = classes(n)
+        if (n["tag"] == "math" and n["attrs"].get("display") == "block") or n["tag"] in ("pre", "table"):
+            found.append(n["tag"])
+        elif c and c[0] in ("letmeout-grid", "letmeout-rect"):
+            found.append(c[0])
+    return found
+assert [wide_parts(a) for a in outer] == [
+    ["math", "math", "pre", "table", "letmeout-grid", "letmeout-rect"], ["math"], ["math"], ["letmeout-rect"], ["math"],
+], [wide_parts(a) for a in outer]
+assert bleed(outer[0]) == "4pt", "the group leaves room for the widest stroke and outset"
+assert bleed(outer[1]) == "0pt"
+assert re.search(r'<p>Middle.</p><div class="letmeout-scroll"[^>]*><math display="block"><mi>𝑐</mi></math></div><p>After.</p>', scroll_text), "a single wide block scrolls on its own, and text stays in paragraphs"
+grid_cell = [n for n, _ in nodes if "letmeout-grid-cell-body" in classes(n)][-1]
+assert classes(grid_cell["children"][0]) == ["letmeout-scroll"], "an equation in an automatic grid scrolls in its cell"
+inline = [n for n, _ in nodes if "letmeout-scroll-inline" in classes(n)]
+assert len(inline) == 1 and inline[0]["text"] == "wide box", "a fixed-width box scrolls inline"
+assert re.search(r"<p>Text <span class=\"letmeout-scroll-inline\"", scroll_text), "the box stays in its paragraph"
+assert "relative" in scroll_text and not any("letmeout-scroll" in " ".join(classes(n)) and n["text"].strip() in ("relative", "fits") for n, _ in nodes), "content that follows the screen width does not scroll"
+assert scroll_text.count("<math") == 5, "a rebuilt equation is wrapped once"
+assert "@media print { .letmeout-scroll, .letmeout-scroll-inline { overflow: visible; } }" in scroll_text
+assert "body, .letmeout-page { overflow-x: clip; }" in scroll_text, "the page itself must not scroll sideways"
+for fmt in ("pdf", "svg"):
+    native, _ = compile_source(scroll_fixture.replace("#box(", "#std.box(").replace("#grid(", "#std.grid(").replace("#grid[", "#std.grid["),
+                               "scroll-native", fmt)
+    patched, _ = compile_source(IMPORT + '#show: letmeout\n' + scroll_fixture, "scroll", fmt)
+    assert native.read_bytes() == patched.read_bytes(), f"scroll areas changed {fmt}"
 
 # Fluid HTML pages drop the width cap; print settings still apply in PDF.
 fluid_source = ('#set page(width: 400pt, margin: 20pt)\n'

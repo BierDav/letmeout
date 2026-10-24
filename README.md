@@ -38,8 +38,8 @@ typst compile report.typ report.pdf
   stacks, columns, and placement come along too.
 - **Pages make sense on a screen.** Page settings become one continuous,
   centred sheet: the width caps the line length, margins shrink on small
-  screens, headers and footers render once, and page breaks only apply when
-  the reader prints.
+  screens, wide equations, code, and layouts scroll sideways, headers and
+  footers render once, and page breaks only apply when the reader prints.
 - **Made for reading.** No pictures of text: everything is selectable,
   searchable HTML with native MathML. Fonts and colors carry over, and the page
   follows the reader's light or dark mode.

@@ -61,6 +61,10 @@ parameter's HTML behavior.
   and color go on the body, and text in another font or color gets a `<span>`.
   Typst's HTML export drops both otherwise. `<script>`, `<style>`, `<title>`, and `<textarea>`
   keep plain text. Math keeps Typst’s native MathML without text spans.
+- With `#show: letmeout`, block equations, code blocks, tables, and grids,
+  shapes, blocks, and boxes with a fixed width scroll sideways when they are too
+  wide for the screen. Neighbouring ones share one scrollbar, and the page itself
+  never scrolls sideways.
 - In HTML, with `#show: letmeout`, `pagebreak` adds nothing on screen, so the content continues without a gap.
   It becomes a page break when the HTML is printed.
 - With `#show: letmeout`, elements that Typst's HTML export ignores or strips
