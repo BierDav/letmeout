@@ -14,7 +14,7 @@ paged equivalence. Generated files go in `tests/output/`. Open
 `tests/output/features.html` in T3's browser and evaluate `tests/browser.js` for
 browser assertions covering RTL, vertical alignment, resizing, and stroke removal.
 
-`scripts/api-docs.py` writes the doc comments of `grid`, `line`, and `align`
+`scripts/api-docs.py` writes the doc comments of `grid`, `line`, `align`, `page`, and the element aliases
 from the latest Typst docs on typst.app. It copies Typst's summary,
 parameters, types, and defaults, and adds the HTML notes from `scripts/api.toml`.
 It stops if Typst adds or removes a parameter that `api.toml` doesn't cover yet,

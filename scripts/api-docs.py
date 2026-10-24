@@ -96,7 +96,7 @@ def blocks(nodes, indent=""):
             if node.strip():
                 out.append(indent + re.sub(r"\s+", " ", node).strip())
             continue
-        if node.tag in ("details", "pre", "nav") or {"previewed-code", "page-end-buttons"} & set(node.classes()):
+        if node.tag in ("details", "pre", "nav") or {"previewed-code", "page-end-buttons", "code-definition"} & set(node.classes()):
             continue
         if node.tag in ("ul", "ol"):
             items = []
@@ -111,6 +111,14 @@ def blocks(nodes, indent=""):
                 text = f"**{text}**"
             if text:
                 out.append(indent + text)
+        elif node.tag == "table":
+            # Each body row becomes a list item, `cell: cell`; the header row names the columns
+            rows = [[re.sub(r"\s+", " ", inline(c)).strip() for c in tr.elements()]
+                    for tr in node.find_all(lambda e: e.tag == "tr")]
+            if node.find_all(lambda e: e.tag == "th"):
+                rows = rows[1:]
+            items = [indent + "- " + ": ".join(cells) for cells in rows if any(cells)]
+            out.append("\n".join(items))
         elif node.tag == "div":
             out += blocks(merge_inline(node.children), indent)
         else:
@@ -124,7 +132,7 @@ def merge_inline(nodes):
     """Loose text and inline elements between blocks form one paragraph."""
     grouped, run = [], []
     for node in nodes:
-        if isinstance(node, Node) and node.tag in ("p", "ul", "ol", "div", "details", "pre", "h4"):
+        if isinstance(node, Node) and node.tag in ("p", "ul", "ol", "div", "details", "pre", "h4", "table"):
             if run:
                 grouped.append(Node("p", {}, None))
                 grouped[-1].children = run
@@ -141,7 +149,7 @@ def merge_inline(nodes):
 def section(heading):
     """The elements after a heading, up to the next heading of the same or a higher level."""
     siblings = heading.parent.children
-    stop = {"h1", "h2", "h3"} if heading.tag == "h3" else {"h1", "h2"}
+    stop = {"h1", "h2", "h3", "h4"} if heading.tag == "h4" else {"h1", "h2", "h3"} if heading.tag == "h3" else {"h1", "h2"}
     out = []
     for node in siblings[siblings.index(heading) + 1:]:
         if isinstance(node, Node) and node.tag in stop:
@@ -156,34 +164,61 @@ def fetch(path):
         return response.read().decode("utf-8")
 
 
-def parse(html, name):
+def lead(heading):
+    """The elements after a definition's heading, up to its first field."""
+    siblings = heading.parent.children
+    out = []
+    for node in siblings[siblings.index(heading) + 1:]:
+        if isinstance(node, Node) and node.tag in ("h1", "h2", "h3", "h4"):
+            break
+        out.append(node)
+    return merge_inline(out)
+
+
+def parameter(h, prefix):
+    info = next(h.find_all(lambda e: "additional-info" in e.classes()), None)
+    types = [a.text().strip() for a in info.find_all(lambda e: "pill" in e.classes())] if info else []
+    mods = [s.text().strip() for small in h.find_all(lambda e: "mod" in e.classes())
+            for s in small.find_all(lambda e: e.tag == "span" and "aria-describedby" in e.attrs)]
+    default = next(h.find_all(lambda e: "default" in e.classes()), None)
+    default = next(default.find_all(lambda e: e.tag == "code"), None) if default else None
+    return {
+        "name": h.attrs["id"].removeprefix(prefix),
+        "types": types,
+        "positional": "Positional" in mods,
+        "required": "Required" in mods,
+        "variadic": "Variadic" in mods,
+        "default": re.sub(r"\s+", " ", default.text()).strip() if default else None,
+        "docs": blocks(section(h)),
+    }
+
+
+def parse(html, name, anchor=None):
+    """A function's summary and parameters, or with `anchor`, a sub-element's, such as `grid.cell`.
+    A sub-element's summary is the text before its first field, and its fields are `h4` headings."""
     root = Tree(html).root
     versions = re.findall(r'href="/docs/changelog/(\d+\.\d+\.\d+)/"', html)
     if not versions:
         sys.exit(f"{name}: no Typst version found on the docs page")
-    summary = next(root.find_all(lambda e: e.tag == "h1" and e.attrs.get("id") == "summary"), None)
-    if summary is None:
-        sys.exit(f"{name}: no summary on the docs page")
     params = []
-    for h3 in root.find_all(lambda e: e.tag == "h3" and (e.attrs.get("id") or "").startswith("parameters-")):
-        info = next(h3.find_all(lambda e: "additional-info" in e.classes()), None)
-        types = [a.text().strip() for a in info.find_all(lambda e: "pill" in e.classes())] if info else []
-        mods = [s.text().strip() for small in h3.find_all(lambda e: "mod" in e.classes())
-                for s in small.find_all(lambda e: e.tag == "span" and "aria-describedby" in e.attrs)]
-        default = next(h3.find_all(lambda e: "default" in e.classes()), None)
-        default = next(default.find_all(lambda e: e.tag == "code"), None) if default else None
-        params.append({
-            "name": h3.attrs["id"].removeprefix("parameters-"),
-            "types": types,
-            "positional": "Positional" in mods,
-            "required": "Required" in mods,
-            "variadic": "Variadic" in mods,
-            "default": re.sub(r"\s+", " ", default.text()).strip() if default else None,
-            "docs": blocks(section(h3)),
-        })
+    if anchor:
+        heading = next(root.find_all(lambda e: e.tag == "h3" and e.attrs.get("id") == anchor), None)
+        if heading is None:
+            sys.exit(f"{name}: no section #{anchor} on the docs page")
+        summary = blocks(lead(heading))
+        prefix = anchor + "-"
+        fields = root.find_all(lambda e: e.tag == "h4" and (e.attrs.get("id") or "").startswith(prefix))
+        params = [parameter(h, prefix) for h in fields]
+    else:
+        summary = next(root.find_all(lambda e: e.tag == "h1" and e.attrs.get("id") == "summary"), None)
+        if summary is None:
+            sys.exit(f"{name}: no summary on the docs page")
+        summary = blocks(section(summary))
+        for h3 in root.find_all(lambda e: e.tag == "h3" and (e.attrs.get("id") or "").startswith("parameters-")):
+            params.append(parameter(h3, "parameters-"))
     if not params:
         sys.exit(f"{name}: no parameters on the docs page")
-    return {"version": versions[0], "summary": blocks(section(summary)), "params": params}
+    return {"version": versions[0], "summary": summary, "params": params}
 
 
 def wrap(text, prefix, rest=None):
@@ -227,6 +262,11 @@ def note(text, prefix, rest=None):
     return lines
 
 
+def default_code(default):
+    """A default as code in the doc comment. `[]` needs a `#`, or tinymist shows empty backticks."""
+    return f"`#{default}`" if default == "[]" else f"`{default}`"
+
+
 def doc_lines(spec, docs):
     paragraphs = list(spec.get("summary", [])) if "summary" in spec else docs["summary"]
     if isinstance(paragraphs, str):
@@ -241,9 +281,9 @@ def doc_lines(spec, docs):
     for param in documented(spec, docs):
         kind = ", ".join(param["types"]) + (", ..." if param["variadic"] else "")
         if spec.get("signature"):
-            default = "the surrounding page setting" + (f"; Typst's default is `{param['default']}`" if param["default"] else "")
+            default = "the surrounding page setting" + (f"; Typst's default is {default_code(param['default'])}" if param["default"] else "")
         else:
-            default = f"`{param['default']}`" if param["default"] else None
+            default = default_code(param["default"]) if param["default"] else None
         role = ", ".join(r for r, on in (("required", param["required"]), ("positional", param["positional"])) if on)
         text = [param["docs"][0] if param["docs"] else ""] + param["docs"][1:]
         head = f"- {param['name']} ({kind}): "
@@ -257,7 +297,9 @@ def doc_lines(spec, docs):
         extra = ([f"Default: {default}."] if default else []) + ([f"This parameter is {role}."] if role else [])
         if extra:
             lines += ["///"] + wrap(" ".join(extra), "///   ")
-        lines += ["///"] + note(spec["params"][param["name"]], "///   ")
+        # The note follows the last line without a blank line, joined by a line break
+        lines[-1] += " \\"
+        lines += note(spec["params"][param["name"]], "///   ")
         out += lines + ["///"]
     out.append("/// -> " + spec.get("returns", "content"))
     return out
@@ -294,13 +336,19 @@ def check_notes(name, spec, docs):
         sys.exit(f"scripts/api.toml [{name}]: " + "; ".join(problems))
 
 
+def definition(name):
+    """A function definition, `#let name(...)`, or an element alias, `#let name = std.name`."""
+    return rf"#let {re.escape(name)}(\(| =)"
+
+
 def generate(text, name, spec, docs):
-    url = DOCS + spec["typst"] + "/"
-    block = [f"{MARKER} from the Typst {docs['version']} docs of `{spec['typst'].split('/')[-1]}`,",
+    url = DOCS + spec["typst"] + "/" + (f"#{spec['anchor']}" if spec.get("anchor") else "")
+    label = ".".join([spec["typst"].split("/")[-1]] + ([spec["anchor"].removeprefix("definitions-")] if spec.get("anchor") else []))
+    block = [f"{MARKER} from the Typst {docs['version']} docs of `{label}`,",
              f"// {url}. Edit scripts/api.toml, not this block."] + doc_lines(spec, docs)
     lines = text.split("\n")
     starts = [i for i, l in enumerate(lines) if l.startswith(MARKER)
-              and any(re.match(rf"#let {re.escape(name)}\(", x) for x in region(lines, i))]
+              and any(re.match(definition(name), x) for x in region(lines, i))]
     if len(starts) > 1:
         sys.exit(f"{spec['file']}: more than one generated block for {name}")
     if starts:
@@ -308,7 +356,7 @@ def generate(text, name, spec, docs):
         old = region(lines, start)
         end = start + len(old)
     else:
-        found = [i for i, l in enumerate(lines) if re.match(rf"#let {re.escape(name)}\(", l)]
+        found = [i for i, l in enumerate(lines) if re.match(definition(name), l)]
         if len(found) != 1:
             sys.exit(f"{spec['file']}: expected one definition of {name}, found {len(found)}")
         start = found[0]
@@ -341,9 +389,10 @@ def main(args):
         specs = tomllib.load(f)
     pages, files, version = {}, {}, None
     for name, spec in specs.items():
-        if spec["typst"] not in pages:
-            pages[spec["typst"]] = parse(fetch(spec["typst"]), spec["typst"])
-        docs = pages[spec["typst"]]
+        key = (spec["typst"], spec.get("anchor"))
+        if key not in pages:
+            pages[key] = parse(fetch(spec["typst"]), spec["typst"], spec.get("anchor"))
+        docs = pages[key]
         version = docs["version"]
         check_notes(name, spec, docs)
         path = os.path.join(ROOT, spec["file"])

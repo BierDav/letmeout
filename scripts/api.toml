@@ -12,7 +12,7 @@
 #   exclude    Typst parameters the function does not take, with the reason
 #   returns    the return type (default: content)
 #   params     how each parameter behaves in HTML. Every parameter that is not
-#              excluded needs one.
+#              excluded needs one. Each one says it applies to HTML rendering.
 
 [grid]
 file = "src/grid.typ"
@@ -22,35 +22,35 @@ html = """A CSS Grid. Paged output is Typst's native grid, unchanged. Use \
 `letmeout-extras.grid-header`, and `letmeout-extras.grid-footer` for its elements."""
 
 [grid.params]
-columns = """CSS column tracks. `auto` sizes to the content, fractions share the \
+columns = """In HTML, CSS column tracks. `auto` sizes to the content, fractions share the \
 free width as `minmax(0, Nfr)`, and lengths and percentages keep their units. \
 A count creates that many automatic columns; an empty array gives one automatic column."""
-rows = """CSS row tracks, with the same sizing modes as columns. The last \
+rows = """In HTML, CSS row tracks, with the same sizing modes as columns. The last \
 definition repeats for additional rows; an empty array gives automatic rows. \
 Explicit rows and otherwise empty slots still receive cells and styling. \
 Percentage row heights follow browser block-size resolution, not a PDF page height."""
-gutter = """CSS gaps. Varying, `auto`, or fractional gutters become tracks \
+gutter = """In HTML, CSS gaps. Varying, `auto`, or fractional gutters become tracks \
 between the content tracks. The last entry repeats; an empty array means zero. \
 Axis-specific gutter settings take precedence."""
-column-gutter = "Like `gutter`, between columns. Takes precedence over `gutter`."
-row-gutter = "Like `gutter`, between rows. Takes precedence over `gutter`."
-inset = """Cell padding: one length for all sides, or a dictionary with \
+column-gutter = "In HTML, like `gutter`, between columns. Takes precedence over `gutter`."
+row-gutter = "In HTML, like `gutter`, between rows. Takes precedence over `gutter`."
+inset = """In HTML, cell padding: one length for all sides, or a dictionary with \
 `top`, `right`, `bottom`, `left`, `x`, `y`, and `rest`. Explicit sides override \
 axis shorthands, which override `rest`; missing grid sides use zero. Arrays \
 cycle by column and functions receive zero-based `(x, y)`, including empty cells. \
 An empty array uses zero padding. Cell inset overrides named sides."""
-align = """Text alignment and CSS alignment inside each cell, on both axes. \
+align = """In HTML, text alignment and CSS alignment inside each cell, on both axes. \
 `left`/`right` are physical; `start`/`end` follow text direction. \
 `top`/`horizon`/`bottom` use available row height. Arrays cycle by column and \
 functions receive zero-based `(x, y)`, including empty cells. An empty array \
 adds no alignment; a cell override replaces only its specified axes."""
-fill = """CSS backgrounds. Colours and linear, conic, and radial gradients work; \
+fill = """In HTML, CSS backgrounds. Colours and linear, conic, and radial gradients work; \
 tilings, off-center radial focal circles, and parent-relative gradients fail \
 with an error. `none` is transparent. Arrays cycle by column and functions \
 receive zero-based `(x, y)`, including empty cells. An empty array is transparent. \
 Cell `auto` inherits the grid fill; cell `none` removes it. Colors follow the \
 document's color scheme."""
-stroke = """Vector edges painted by CSS, with thickness, caps, dashes, and \
+stroke = """In HTML, vector edges painted by CSS, with thickness, caps, dashes, and \
 gradients. Accepts `paint`, `thickness`, `cap`, `join`, `dash` (including \
 `array`/`phase`), and `miter-limit`, or side dictionaries using \
 `top`/`right`/`bottom`/`left`, `x`/`y`/`rest`. Arrays cycle by column and functions \
@@ -58,7 +58,7 @@ receive zero-based `(x, y)`, including empty cells; an empty array adds no edges
 Explicit separators override cell strokes, which override grid strokes; \
 explicit `none` erases an edge. Later separators win; equal-priority cell \
 edges use the thicker stroke. See docs/html-semantics.md for every stroke field."""
-children = """Cells in row-major order. The page source follows the visual \
+children = """In HTML, cells in row-major order. The page source follows the visual \
 order, so screen readers read cells as they appear. Headers and footers render \
 once: a screen has no page boundaries to repeat them at. Cell `x`/`y`, \
 `colspan`/`rowspan`, `fill`/`inset`/`align`/`stroke`, and `breakable`, separator \
@@ -73,20 +73,20 @@ html = """An SVG stroke mask painted by CSS, hidden from screen readers. Paged \
 output is Typst's native line, unchanged. Use `std.line` for set and show rules."""
 
 [line.params]
-start = """Physical `(x, y)` offset from the container's top-left, independent \
+start = """In HTML, physical `(x, y)` offset from the container's top-left, independent \
 of text direction. Percentages on both axes use its inline width; absolute, \
 font-relative, and mixed lengths retain their components. Positive vertical \
 extent reserves flow height; negative coordinates can overflow."""
-end = """Explicit physical `(x, y)` endpoint, with the same units and width-based \
+end = """In HTML, explicit physical `(x, y)` endpoint, with the same units and width-based \
 percentages as `start`. When given, overrides both `length` and `angle`. \
 With `none`, the endpoint is computed from `start`, `length`, and `angle`."""
-length = """Distance from `start` when `end` is `none`. Percentages use the \
+length = """In HTML, distance from `start` when `end` is `none`. Percentages use the \
 container's inline width; absolute, font-relative, and mixed lengths stay \
 responsive. Ignored when `end` is given."""
-angle = """Clockwise direction: `0deg` points right and `90deg` points down. \
+angle = """In HTML, clockwise direction: `0deg` points right and `90deg` points down. \
 The computed endpoint determines CSS rotation; vertical and reversed lines \
 work. Ignored when `end` is given."""
-stroke = """CSS paint through an SVG mask. `paint` accepts colors and supported \
+stroke = """In HTML, CSS paint through an SVG mask. `paint` accepts colors and supported \
 gradients; `thickness` sets the stroke width; `cap` maps to butt/round/square \
 SVG caps; `dash` accepts named patterns or an array/dictionary with `array` \
 and `phase` (`dot` uses the thickness). `join` and `miter-limit` are emitted \
@@ -101,13 +101,13 @@ html = """A block that aligns its content with CSS. Paged output is Typst's \
 native alignment, unchanged. Use `std.align` for set and show rules."""
 
 [align.params]
-alignment = """`left`, `center`, and `right` stay on that side; `start` and \
+alignment = """In HTML, `left`, `center`, and `right` stay on that side; `start` and \
 `end` follow the text direction. `top`, `horizon`, and `bottom` need free \
 space from a container, such as a grid row: HTML has no page height to align \
 in. Horizontal alignment sets `text-align` and `justify-items`; vertical \
 alignment sets `align-content`. Combined axes apply together; an omitted axis \
 inherits the surrounding native alignment."""
-body = """Selectable HTML content inside a block container. Links and nested \
+body = """In HTML, selectable content inside a block container. Links and nested \
 supported layouts keep their behavior. Nested alignment can position a group \
 while aligning the text inside it differently. No viewport height is added."""
 
@@ -116,7 +116,7 @@ file = "src/page-api.typ"
 typst = "layout/page"
 signature = "native-page"
 positional = ["body"]
-html = """Typst's own `page`, with these notes on HTML. It passes on exactly the \
+html = """In HTML, it passes on exactly the \
 arguments you give, so it behaves like `page` in every output: `letmeout-extras.page(...)[...]` \
 and `show: letmeout-extras.page.with(...)` work as with `page`. Use `set page(...)` for set \
 rules; the package does not shadow `page`. With `#show: letmeout`, HTML export turns \
@@ -124,37 +124,491 @@ page settings into one continuous block per run of equal settings, not a sheet o
 paper. Without it, Typst ignores page settings in HTML. Paged output is unchanged."""
 
 [page.params]
-paper = """Sets the width and height. The width caps the sheet; the height only \
+paper = """In HTML, sets the width and height. The width caps the sheet; the height only \
 resolves vertical percentage margins. Explicit dimensions override it."""
-width = """Maximum width of the centred sheet. On narrower screens the sheet fills \
+width = """In HTML, maximum width of the centred sheet. On narrower screens the sheet fills \
 the available width. `auto` removes the cap."""
-height = """Does not limit the block's height; the content does. Still resolves \
+height = """In HTML, does not limit the block's height; the content does. Still resolves \
 vertical percentage and automatic margins, and becomes the width when `flipped`."""
-flipped = "Swaps width and height, so it changes the sheet width."
-margin = """Padding on the sheet, with Typst's defaults, folding, `x`/`y`/`rest`, and \
+flipped = "In HTML, swaps width and height, so it changes the sheet width."
+margin = """In HTML, padding on the sheet, with Typst's defaults, folding, `x`/`y`/`rest`, and \
 ratios. With a fixed width, margins are fractions of the sheet width, so they shrink \
 on narrower screens."""
-bleed = "No effect on screen; there is no trim box."
-binding = """The first page's layout applies, as HTML has no facing pages: an \
+bleed = "In HTML, no effect on screen; there is no trim box."
+binding = """In HTML, the first page's layout applies, as HTML has no facing pages: an \
 `inside` margin goes left for `left` and right for `right`."""
-columns = """CSS columns with the `columns.gutter` gap. Columns are at least `12em` \
+columns = """In HTML, CSS columns with the `columns.gutter` gap. Columns are at least `12em` \
 wide, so they collapse on narrow screens."""
-fill = """Background of the full-width block, following the color scheme. `auto` is \
+fill = """In HTML, background of the full-width block, following the color scheme. `auto` is \
 transparent, so host colors and dark mode stay."""
-numbering = """Shown in the automatic header or footer through `counter(page)`. HTML \
+numbering = """In HTML, shown in the automatic header or footer through `counter(page)`. HTML \
 is one page, so the number does not advance at page breaks."""
-supplement = "No effect on screen."
-number-align = """The horizontal part aligns the automatic number; `top` puts it in the \
+supplement = "In HTML, no effect on screen."
+number-align = """In HTML, the horizontal part aligns the automatic number; `top` puts it in the \
 header, anything else in the footer."""
-header = """A `<header>` before the content, once per block, at the bottom of the top \
+header = """In HTML, a `<header>` before the content, once per block, at the bottom of the top \
 margin. `auto` shows the page number if `number-align` is at the top."""
-header-ascent = "Space below the header content, relative to the top margin."
-footer = """A `<footer>` after the content, once per block, at the top of the bottom \
+header-ascent = "In HTML, space below the header content, relative to the top margin."
+footer = """In HTML, a `<footer>` after the content, once per block, at the top of the bottom \
 margin. `auto` shows the page number unless `number-align` is at the top."""
-footer-descent = "Space above the footer content, relative to the bottom margin."
-background = """A layer behind the content, centred and clipped to the sheet. Hidden \
+footer-descent = "In HTML, space above the footer content, relative to the bottom margin."
+background = """In HTML, a layer behind the content, centred and clipped to the sheet. Hidden \
 from screen readers and clicks."""
-foreground = """A layer above the content, like `background`. Hidden from screen \
+foreground = """In HTML, a layer above the content, like `background`. Hidden from screen \
 readers and clicks."""
-body = """Its own block with its own settings, inheriting the surrounding ones. \
+body = """In HTML, its own block with its own settings, inheriting the surrounding ones. \
 Content before and after it forms separate blocks."""
+
+# Elements that `show: letmeout` changes in HTML. Each is an alias of the native element.
+
+[image]
+file = "src/element-api.typ"
+typst = "visualize/image"
+alias = true
+html = """In HTML, the image sits in a `letmeout-image` element with `data-size` set from \
+`width` and `height`, and `data-fit` when both are set, so the stylesheet sizes it. \
+Paged output is unchanged."""
+
+[image.params]
+source = "In HTML, unchanged: Typst's native image output."
+format = "In HTML, unchanged: Typst's native image output."
+width = "In HTML, sets `data-size` (`width`, `height`, `both`, or `auto`) on the wrapper, which the stylesheet uses for sizing."
+height = "In HTML, sets `data-size` (`width`, `height`, `both`, or `auto`) on the wrapper, which the stylesheet uses for sizing."
+alt = "In HTML, unchanged: Typst's native image output."
+page = "In HTML, unchanged: Typst's native image output."
+fit = "In HTML, sets `data-fit` when both `width` and `height` are set, so the stylesheet fits the image to them."
+scaling = "In HTML, unchanged: Typst's native image output."
+icc = "In HTML, unchanged: Typst's native image output."
+
+[rect]
+file = "src/element-api.typ"
+typst = "visualize/rect"
+alias = true
+html = """In HTML, a `div` with class `letmeout-rect`. Its content stays selectable. Fill and \
+stroke paint sit in a layer behind the content, so neither changes the layout. Paged output \
+is unchanged."""
+
+[rect.params]
+width = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+height = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+fill = "In HTML, the background of the paint layer. Colors and supported gradients; other paints keep native output."
+stroke = "In HTML, centred on the outline. Uniform dashed strokes use an SVG mask, and other strokes use CSS borders."
+radius = "In HTML, per-corner CSS `border-radius`. Ratios are relative to half the shorter side."
+inset = "In HTML, padding, with the box including it."
+outset = "In HTML, extends the paint layer without changing the layout."
+body = "In HTML, the content stays selectable HTML inside the `div`."
+
+[square]
+file = "src/element-api.typ"
+typst = "visualize/square"
+alias = true
+html = """In HTML, a `div` with class `letmeout-square`, with the same paint and sizing as `rect`. \
+Paged output is unchanged."""
+
+[square.params]
+size = "In HTML, becomes `width` and `height`; `aspect-ratio: 1` keeps it square when a side is automatic."
+width = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+height = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+fill = "In HTML, the background of the paint layer. Colors and supported gradients; other paints keep native output."
+stroke = "In HTML, centred on the outline. Uniform dashed strokes use an SVG mask, and other strokes use CSS borders."
+radius = "In HTML, per-corner CSS `border-radius`. Ratios are relative to half the shorter side."
+inset = "In HTML, padding, with the box including it."
+outset = "In HTML, extends the paint layer without changing the layout."
+body = "In HTML, the content stays selectable HTML inside the `div`."
+
+[circle]
+file = "src/element-api.typ"
+typst = "visualize/circle"
+alias = true
+html = """In HTML, a `div` with class `letmeout-circle`, with the same paint and sizing as `rect`. \
+Paged output is unchanged."""
+
+[circle.params]
+radius = "In HTML, becomes `width` and `height`; `aspect-ratio: 1` keeps it round when a side is automatic."
+width = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+height = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+fill = "In HTML, the background of the paint layer. Colors and supported gradients; other paints keep native output."
+stroke = "In HTML, centred on the outline. Uniform dashed strokes use an SVG mask, and other strokes use CSS borders."
+inset = "In HTML, adds the margin of the inscribed rectangle, exactly for fixed sizes and approximately (`0.25em`) for automatic ones."
+outset = "In HTML, extends the paint layer without changing the layout."
+body = "In HTML, the content stays selectable HTML inside the `div`."
+
+[ellipse]
+file = "src/element-api.typ"
+typst = "visualize/ellipse"
+alias = true
+html = """In HTML, a `div` with class `letmeout-ellipse`, with the same paint and sizing as `rect`. \
+Paged output is unchanged."""
+
+[ellipse.params]
+width = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+height = "In HTML, CSS sizes, with the box including the inset. Shapes without content get Typst's default size. Fractions are dropped."
+fill = "In HTML, the background of the paint layer. Colors and supported gradients; other paints keep native output."
+stroke = "In HTML, centred on the outline. Uniform dashed strokes use an SVG mask, and other strokes use CSS borders."
+inset = "In HTML, adds the margin of the inscribed rectangle, exactly for fixed sizes and approximately (`0.25em`) for automatic ones."
+outset = "In HTML, extends the paint layer without changing the layout."
+body = "In HTML, the content stays selectable HTML inside the `div`."
+
+[box]
+file = "src/element-api.typ"
+typst = "layout/box"
+alias = true
+html = """In HTML, a `span` with `display: inline-block` once it has fill, stroke, inset, size, clip, \
+or spacing; otherwise Typst's native `span`. Paged output is unchanged."""
+
+[box.params]
+width = "In HTML, CSS sizes, with the box including the inset. Fractions are dropped."
+height = "In HTML, CSS sizes, with the box including the inset. Fractions are dropped."
+baseline = "In HTML, a length shift becomes `vertical-align`; a ratio needs a length height."
+fill = "In HTML, the background of the paint layer. Colors and supported gradients; other paints keep native output."
+stroke = "In HTML, centred on the outline. Uniform dashed strokes use an SVG mask, and other strokes use CSS borders."
+radius = "In HTML, per-corner CSS `border-radius`. Ratios are relative to half the shorter side."
+inset = "In HTML, padding, with the box including it."
+outset = "In HTML, extends the paint layer without changing the layout."
+clip = "In HTML, `overflow: clip`, with the corner radii."
+body = "In HTML, the content stays selectable HTML inside the `span` or `div`."
+
+[block]
+file = "src/element-api.typ"
+typst = "layout/block"
+alias = true
+html = """In HTML, a `div` with class `letmeout-block` once it has fill, stroke, inset, size, clip, \
+or spacing; otherwise Typst's native `div`. Paged output is unchanged."""
+
+[block.params]
+width = "In HTML, CSS sizes, with the box including the inset. Fractions are dropped."
+height = "In HTML, CSS sizes, with the box including the inset. Fractions are dropped."
+breakable = "In HTML, `false` emits `break-inside: avoid`."
+fill = "In HTML, the background of the paint layer. Colors and supported gradients; other paints keep native output."
+stroke = "In HTML, centred on the outline. Uniform dashed strokes use an SVG mask, and other strokes use CSS borders."
+radius = "In HTML, per-corner CSS `border-radius`. Ratios are relative to half the shorter side."
+inset = "In HTML, padding, with the box including it."
+outset = "In HTML, extends the paint layer without changing the layout."
+spacing = "In HTML, no effect."
+above = "In HTML, becomes `margin-top`, which collapses like Typst's block spacing."
+below = "In HTML, becomes `margin-bottom`, which collapses like Typst's block spacing."
+clip = "In HTML, `overflow: clip`, with the corner radii."
+sticky = "In HTML, no effect."
+body = "In HTML, the content stays selectable HTML inside the `div`."
+
+[polygon]
+file = "src/element-api.typ"
+typst = "visualize/polygon"
+alias = true
+html = "In HTML, native SVG inside an `html.frame`, following the frame's dark-mode policy. Paged output is unchanged."
+
+[polygon.params]
+fill = "In HTML, native SVG paint inside an `html.frame`, following the frame's dark-mode policy."
+fill-rule = "In HTML, native SVG fill rule inside an `html.frame`."
+stroke = "In HTML, native SVG paint inside an `html.frame`, following the frame's dark-mode policy."
+vertices = "In HTML, drawn as native SVG inside an `html.frame`."
+
+[curve]
+file = "src/element-api.typ"
+typst = "visualize/curve"
+alias = true
+html = "In HTML, native SVG inside an `html.frame`, following the frame's dark-mode policy. Paged output is unchanged."
+
+[curve.params]
+fill = "In HTML, native SVG paint inside an `html.frame`, following the frame's dark-mode policy."
+fill-rule = "In HTML, native SVG fill rule inside an `html.frame`."
+stroke = "In HTML, native SVG paint inside an `html.frame`, following the frame's dark-mode policy."
+components = "In HTML, drawn as native SVG inside an `html.frame`."
+
+[h]
+file = "src/element-api.typ"
+typst = "layout/h"
+alias = true
+html = "In HTML, an empty `span` with `margin-inline-start`. Negative amounts work; fractions stay native. Paged output is unchanged."
+
+[h.params]
+amount = "In HTML, the `margin-inline-start` of the `span`. Fractions stay native."
+weak = "In HTML, no effect: the spacing is always a `span`."
+
+[v]
+file = "src/element-api.typ"
+typst = "layout/v"
+alias = true
+html = """In HTML, an empty `div` with a height. Fractions stay native. Paged output is unchanged."""
+
+[v.params]
+amount = "In HTML, the height of the `div`, or `margin-top` for a weak or negative amount. Fractions stay native."
+weak = "In HTML, a weak amount becomes `margin-top`, which collapses with neighbouring margins like weak spacing."
+
+[pad]
+file = "src/element-api.typ"
+typst = "layout/pad"
+alias = true
+html = "In HTML, a `div` with class `letmeout-pad` and padding per side. Paged output is unchanged."
+
+[pad.params]
+left = "In HTML, padding on the left; negative values become negative margins."
+top = "In HTML, padding on the top; negative values become negative margins."
+right = "In HTML, padding on the right; negative values become negative margins."
+bottom = "In HTML, padding on the bottom; negative values become negative margins."
+x = "In HTML, horizontal padding; negative values become negative margins."
+y = "In HTML, vertical padding; negative values become negative margins."
+rest = "In HTML, padding on every side not set by the others; negative values become negative margins."
+body = "In HTML, the content stays selectable HTML inside the `div`."
+
+[hide]
+file = "src/element-api.typ"
+typst = "layout/hide"
+alias = true
+html = """In HTML, `visibility: hidden` on a `span`, or on a `div` for block content. The content keeps \
+its space and is hidden from screen readers. Paged output is unchanged."""
+
+[hide.params]
+body = "In HTML, hidden with `visibility: hidden` and kept out of screen readers, keeping its space."
+
+[move]
+file = "src/element-api.typ"
+typst = "layout/move"
+alias = true
+html = "In HTML, `position: relative` with `left` and `top` from `dx` and `dy`. Paged output is unchanged."
+
+[move.params]
+dx = "In HTML, `left`; ratios use the container."
+dy = "In HTML, `top`; ratios use the container."
+body = "In HTML, the content stays selectable HTML inside the moved `div`."
+
+[rotate]
+file = "src/element-api.typ"
+typst = "layout/rotate"
+alias = true
+html = """In HTML, a CSS `transform` around `origin`, on a block as wide as its content. Paged output \
+is unchanged."""
+
+[rotate.params]
+angle = "In HTML, the rotation of the CSS `transform`."
+origin = "In HTML, the CSS transform origin."
+reflow = "In HTML, no effect: the layout is not reflowed."
+body = "In HTML, the content stays selectable HTML inside the transformed block."
+
+[skew]
+file = "src/element-api.typ"
+typst = "layout/skew"
+alias = true
+html = """In HTML, a CSS `transform` around `origin`, on a block as wide as its content. Paged output \
+is unchanged."""
+
+[skew.params]
+ax = "In HTML, the horizontal skew of the CSS `transform`."
+ay = "In HTML, the vertical skew of the CSS `transform`."
+origin = "In HTML, the CSS transform origin."
+reflow = "In HTML, no effect: the layout is not reflowed."
+body = "In HTML, the content stays selectable HTML inside the transformed block."
+
+[scale]
+file = "src/element-api.typ"
+typst = "layout/scale"
+alias = true
+html = """In HTML, CSS `scale` around `origin`. With `reflow: true` and one positive factor, CSS `zoom` \
+reflows the layout. Paged output is unchanged."""
+
+[scale.params]
+factor = "In HTML, a uniform CSS `scale`, with `reflow` as above."
+x = "In HTML, the horizontal CSS `scale`. Lengths need the content's size and stay native."
+y = "In HTML, the vertical CSS `scale`. Lengths need the content's size and stay native."
+origin = "In HTML, the CSS transform origin."
+reflow = "In HTML, with one positive factor, CSS `zoom` reflows the layout."
+body = "In HTML, the content stays selectable HTML inside the scaled `div`."
+
+[stack]
+file = "src/element-api.typ"
+typst = "layout/stack"
+alias = true
+html = """In HTML, a flex box. Paged output is unchanged."""
+
+[stack.params]
+dir = "In HTML, a flex direction: `ltr` and `rtl` are physical, also in RTL text, and `ttb` and `btt` are vertical."
+spacing = "In HTML, goes between adjacent children; length and fraction children become fixed and growing spacers."
+children = "In HTML, each child is a flex item of the stack."
+
+[columns]
+file = "src/element-api.typ"
+typst = "layout/columns"
+alias = true
+html = """In HTML, CSS `column-count` with `column-width: 12em` and the gutter as `column-gap`, so columns \
+collapse on narrow screens. Paged output is unchanged."""
+
+[columns.params]
+count = "In HTML, `column-count`."
+gutter = "In HTML, `column-gap`, with `column-width: 12em`, so columns collapse on narrow screens."
+body = "In HTML, the content stays selectable HTML inside the column container."
+
+[colbreak]
+file = "src/element-api.typ"
+typst = "layout/colbreak"
+alias = true
+html = "In HTML, an empty `div` with `break-after: column`. Paged output is unchanged."
+
+[colbreak.params]
+weak = "In HTML, no effect: the break is always an empty `div`."
+
+[place]
+file = "src/element-api.typ"
+typst = "layout/place"
+alias = true
+html = """In HTML, `float: true` keeps the content in the flow with `clearance` as margin. Otherwise \
+`position: absolute` in the nearest positioned container. Paged output is unchanged."""
+
+[place.params]
+alignment = "In HTML, the horizontal part aligns the content; without a vertical part it stays at its height in the flow."
+scope = "In HTML, no effect: placement uses the nearest positioned container."
+float = "In HTML, `float: true` keeps the content in the flow."
+clearance = "In HTML, the margin around a floated element."
+dx = "In HTML, `translate`."
+dy = "In HTML, `translate`."
+body = "In HTML, the content stays selectable inside the placed element."
+
+[underline]
+file = "src/element-api.typ"
+typst = "text/underline"
+alias = true
+html = """In HTML, with a custom `stroke` or `offset`, a `span` with CSS decoration properties. Defaults \
+keep native output. Paged output is unchanged."""
+
+[underline.params]
+stroke = "In HTML, `text-decoration-color`, `-thickness`, and `-style` (`dashed` or `dotted`)."
+offset = "In HTML, `text-underline-offset`."
+extent = "In HTML, no effect."
+evade = "In HTML, no effect."
+background = "In HTML, no effect."
+body = "In HTML, the decorated content stays selectable."
+
+[overline]
+file = "src/element-api.typ"
+typst = "text/overline"
+alias = true
+html = """In HTML, with a custom `stroke` or `offset`, a `span` with CSS decoration properties. Defaults \
+keep native output. Paged output is unchanged."""
+
+[overline.params]
+stroke = "In HTML, `text-decoration-color`, `-thickness`, and `-style` (`dashed` or `dotted`)."
+offset = "In HTML, `text-underline-offset`."
+extent = "In HTML, no effect."
+evade = "In HTML, no effect."
+background = "In HTML, no effect."
+body = "In HTML, the decorated content stays selectable."
+
+[strike]
+file = "src/element-api.typ"
+typst = "text/strike"
+alias = true
+html = """In HTML, with a custom `stroke` or `offset`, a `span` with CSS decoration properties. Defaults \
+keep native output. Paged output is unchanged."""
+
+[strike.params]
+stroke = "In HTML, `text-decoration-color`, `-thickness`, and `-style` (`dashed` or `dotted`)."
+offset = "In HTML, `text-underline-offset`."
+extent = "In HTML, no effect."
+background = "In HTML, no effect."
+body = "In HTML, the decorated content stays selectable."
+
+[highlight]
+file = "src/element-api.typ"
+typst = "text/highlight"
+alias = true
+html = """In HTML, a `mark` with the fill as background, keeping the text color. Paged output is unchanged."""
+
+[highlight.params]
+fill = "In HTML, the background of the `mark`; the text color is kept."
+stroke = "In HTML, no effect."
+top-edge = "In HTML, no effect."
+bottom-edge = "In HTML, no effect."
+extent = "In HTML, `padding-inline`."
+radius = "In HTML, `border-radius`."
+body = "In HTML, the text stays inside the `mark`."
+
+[pagebreak]
+file = "src/element-api.typ"
+typst = "layout/pagebreak"
+alias = true
+html = """In HTML, with `#show: letmeout`, a pagebreak adds nothing on screen. A strong break renders an \
+empty, hidden `div` with `break-before`, so a printer breaks there. Paged output is unchanged."""
+
+[pagebreak.params]
+weak = "In HTML, a weak break renders nothing, since a block already starts on a new printed sheet."
+to = """In HTML, `"odd"` and `"even"` become `break-before: recto` and `verso`; any other value becomes \
+`break-before: page`."""
+
+# Grid sub-elements. Their docs are on the grid page, under each element's own section.
+
+[grid-cell]
+file = "letmeout-extras.typ"
+typst = "layout/grid"
+anchor = "definitions-cell"
+alias = true
+html = """In HTML, the body sits in the cell's inner block, and `colspan`, `rowspan`, `inset`, `align`, \
+`fill`, `stroke`, and `breakable` become CSS. See docs/html-semantics.md for every field. Paged \
+output is unchanged."""
+
+[grid-cell.params]
+body = "In HTML, selectable content in the cell's inner block; nested supported layouts remain HTML."
+x = "In HTML, the logical column, counted from the start side of the text direction. `auto` searches for a free column."
+y = "In HTML, the row. `auto` searches for a free row."
+colspan = "In HTML, the number of columns spanned, including gutter tracks in the CSS span."
+rowspan = "In HTML, the number of rows spanned, including gutter tracks. Creates extra rows when needed."
+inset = "In HTML, CSS padding. `auto` inherits the grid inset; `0pt` removes padding."
+align = "In HTML, the cell's alignment. `auto` inherits the grid's value."
+fill = "In HTML, the CSS background. `auto` inherits the grid fill, and `none` removes it."
+stroke = "In HTML, the cell's edge strokes. `auto` inherits the grid strokes, and `none` erases all cell edges."
+breakable = "In HTML, `true` emits `break-inside: auto` and `false` emits `break-inside: avoid`. A browser hint with no effect on the continuous screen flow."
+
+[grid-hline]
+file = "letmeout-extras.typ"
+typst = "layout/grid"
+anchor = "definitions-hline"
+alias = true
+html = """In HTML, a decorative stroke along the row edge, drawn over the cell edges in its range. \
+See docs/html-semantics.md for every field. Paged output is unchanged."""
+
+[grid-hline.params]
+y = "In HTML, the row edge the line is drawn on. `auto` follows the last automatically placed cell."
+start = "In HTML, the first column of the stroke."
+end = "In HTML, the column the stroke stops before. `none` extends it to the last column."
+stroke = "In HTML, a decorative stroke over the cell edges in its range. `none` erases those edges."
+position = "In HTML, `top` and `bottom` select different edges when there is a gutter."
+
+[grid-vline]
+file = "letmeout-extras.typ"
+typst = "layout/grid"
+anchor = "definitions-vline"
+alias = true
+html = """In HTML, a decorative stroke along the column edge, drawn over the cell edges in its range. \
+See docs/html-semantics.md for every field. Paged output is unchanged."""
+
+[grid-vline.params]
+x = "In HTML, the column edge the line is drawn on. `auto` follows the last automatically placed cell."
+start = "In HTML, the first row of the stroke."
+end = "In HTML, the row the stroke stops before. `none` extends it to the last row."
+stroke = "In HTML, a decorative stroke over the cell edges in its range. `none` erases those edges."
+position = "In HTML, `start` and `end` follow text direction, while `left` and `right` stay physical."
+
+[grid-header]
+file = "letmeout-extras.typ"
+typst = "layout/grid"
+anchor = "definitions-header"
+alias = true
+html = """In HTML, its cells are flattened into the grid and marked as a header group. It renders once, since \
+a screen has no page boundaries to repeat it at. See docs/html-semantics.md for every field. Paged \
+output is unchanged."""
+
+[grid-header.params]
+children = """In HTML, the cells are flattened into the grid with `data-grid-group="header"`."""
+repeat = "In HTML, recorded as `data-grid-repeat`. The content renders once, since a screen has no page boundaries."
+level = "In HTML, recorded as `data-grid-level`. No hierarchy is added without page boundaries."
+
+[grid-footer]
+file = "letmeout-extras.typ"
+typst = "layout/grid"
+anchor = "definitions-footer"
+alias = true
+html = """In HTML, its cells are flattened into the grid and marked as a footer group. It renders once, since \
+a screen has no page boundaries to repeat it at. See docs/html-semantics.md for every field. Paged \
+output is unchanged."""
+
+[grid-footer.params]
+children = """In HTML, the cells are flattened into the grid with `data-grid-group="footer"`."""
+repeat = "In HTML, recorded as `data-grid-repeat`. The content renders once, since a screen has no page boundaries."

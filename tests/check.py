@@ -538,6 +538,17 @@ _, error = compile_source('#import "/lib.typ": *\n#import letmeout-extras: *\n#s
 assert "only element functions" in error
 compile_source('#import "/lib.typ": *\n#import letmeout-extras: *\n#set std.page(margin: 1cm)\nA', "page-std", "pdf")
 
+# `letmeout-extras.pagebreak` is an alias of native `pagebreak`, so its output is identical.
+pagebreak_api = '#import "/lib.typ": *\n#show: letmeout\nA\n#letmeout-extras.pagebreak(to: "odd")\nB'
+pagebreak_native = '#import "/lib.typ": *\n#show: letmeout\nA\n#pagebreak(to: "odd")\nB'
+for fmt in ("pdf", "png", "svg", "html"):
+    native, _ = compile_source(pagebreak_native, "pagebreak-api-native", fmt)
+    wrapped, _ = compile_source(pagebreak_api, "pagebreak-api", fmt)
+    assert native.read_bytes() == wrapped.read_bytes(), f"letmeout-extras.pagebreak changed {fmt}"
+# A wildcard import of letmeout-extras keeps `set pagebreak` and `show pagebreak` working, since the alias is the element.
+compile_source('#import "/lib.typ": *\n#import letmeout-extras: *\n#set pagebreak(weak: true)\nA', "pagebreak-shadowed", "pdf")
+compile_source('#import "/lib.typ": *\n#import letmeout-extras: *\n#show pagebreak: it => [X]\nA', "pagebreak-show-shadowed", "pdf")
+
 print("PASS: HTML grid, line, align; content, styling, frames, paints, and diagnostics")
 print("PASS: show: letmeout with set page, nested pages, pagebreaks, and paper sizes")
 print("PASS: show: letmeout styles the screen: margin, color scheme, fonts, and frames")

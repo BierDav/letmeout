@@ -34,51 +34,47 @@
 ///
 ///   Must be an array of exactly two relative lengths.
 ///
-///   Default: `(0% + 0pt, 0% + 0pt)`.
-///
-///   #quote(block: true)[*Note:* Physical `(x, y)` offset from the container's
+///   Default: `(0% + 0pt, 0% + 0pt)`. \
+///   #quote(block: true)[*Note:* In HTML, physical `(x, y)` offset from the container's
 ///   top-left, independent of text direction. Percentages on both axes use its inline
 ///   width; absolute, font-relative, and mixed lengths retain their components.
 ///   Positive vertical extent reserves flow height; negative coordinates can overflow.]
 ///
 /// - end (none, array): The point where the line ends.
 ///
-///   Default: `none`.
-///
-///   #quote(block: true)[*Note:* Explicit physical `(x, y)` endpoint, with the same
-///   units and width-based percentages as `start`. When given, overrides both `length`
-///   and `angle`. With `none`, the endpoint is computed from `start`, `length`, and
-///   `angle`.]
+///   Default: `none`. \
+///   #quote(block: true)[*Note:* In HTML, explicit physical `(x, y)` endpoint, with the
+///   same units and width-based percentages as `start`. When given, overrides both
+///   `length` and `angle`. With `none`, the endpoint is computed from `start`,
+///   `length`, and `angle`.]
 ///
 /// - length (relative): The line’s length. This is only respected if `end` is `none`.
 ///
-///   Default: `0% + 30pt`.
-///
-///   #quote(block: true)[*Note:* Distance from `start` when `end` is `none`.
+///   Default: `0% + 30pt`. \
+///   #quote(block: true)[*Note:* In HTML, distance from `start` when `end` is `none`.
 ///   Percentages use the container's inline width; absolute, font-relative, and mixed
 ///   lengths stay responsive. Ignored when `end` is given.]
 ///
 /// - angle (angle): The angle at which the line points away from the origin. This is
 ///   only respected if `end` is `none`.
 ///
-///   Default: `0deg`.
-///
-///   #quote(block: true)[*Note:* Clockwise direction: `0deg` points right and `90deg`
-///   points down. The computed endpoint determines CSS rotation; vertical and reversed
-///   lines work. Ignored when `end` is given.]
+///   Default: `0deg`. \
+///   #quote(block: true)[*Note:* In HTML, clockwise direction: `0deg` points right and
+///   `90deg` points down. The computed endpoint determines CSS rotation; vertical and
+///   reversed lines work. Ignored when `end` is given.]
 ///
 /// - stroke (length, color, gradient, stroke, tiling, dictionary):
 ///   How to stroke the line.
 ///
-///   Default: `1pt + black`.
-///
-///   #quote(block: true)[*Note:* CSS paint through an SVG mask. `paint` accepts colors
-///   and supported gradients; `thickness` sets the stroke width; `cap` maps to
-///   butt/round/square SVG caps; `dash` accepts named patterns or an array/dictionary
-///   with `array` and `phase` (`dot` uses the thickness). `join` and `miter-limit` are
-///   emitted but have no visible effect on a straight segment. Automatic fields use
-///   native defaults. Unsupported paints fail explicitly. Colors follow the document's
-///   color scheme. See docs/html-semantics.md for the shared stroke-field reference.]
+///   Default: `1pt + black`. \
+///   #quote(block: true)[*Note:* In HTML, CSS paint through an SVG mask. `paint`
+///   accepts colors and supported gradients; `thickness` sets the stroke width; `cap`
+///   maps to butt/round/square SVG caps; `dash` accepts named patterns or an
+///   array/dictionary with `array` and `phase` (`dot` uses the thickness). `join` and
+///   `miter-limit` are emitted but have no visible effect on a straight segment.
+///   Automatic fields use native defaults. Unsupported paints fail explicitly. Colors
+///   follow the document's color scheme. See docs/html-semantics.md for the shared
+///   stroke-field reference.]
 ///
 /// -> content
 #let line(..args) = bridge(std.line(..args), std.line, html-line)

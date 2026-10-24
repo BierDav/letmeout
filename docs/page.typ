@@ -21,7 +21,7 @@ narrow screens. The header comes before the content and the footer after it.
 
 #pagebreak()
 = Continuous content
-A pagebreak adds nothing on screen. The content continues, and a printer starts
+In HTML, a pagebreak adds nothing on screen. The content continues, and a printer starts
 a new sheet here.
 
 #set page(columns: 2)

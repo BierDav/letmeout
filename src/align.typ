@@ -22,20 +22,18 @@
 ///
 /// - alignment (alignment): The alignment along both axes.
 ///
-///   Default: `start + top`. This parameter is positional.
-///
-///   #quote(block: true)[*Note:* `left`, `center`, and `right` stay on that side;
-///   `start` and `end` follow the text direction. `top`, `horizon`, and `bottom` need
-///   free space from a container, such as a grid row: HTML has no page height to align
-///   in. Horizontal alignment sets `text-align` and `justify-items`; vertical alignment
-///   sets `align-content`. Combined axes apply together; an omitted axis inherits the
-///   surrounding native alignment.]
+///   Default: `start + top`. This parameter is positional. \
+///   #quote(block: true)[*Note:* In HTML, `left`, `center`, and `right` stay on that
+///   side; `start` and `end` follow the text direction. `top`, `horizon`, and `bottom`
+///   need free space from a container, such as a grid row: HTML has no page height to
+///   align in. Horizontal alignment sets `text-align` and `justify-items`; vertical
+///   alignment sets `align-content`. Combined axes apply together; an omitted axis
+///   inherits the surrounding native alignment.]
 ///
 /// - body (content): The content to align.
 ///
-///   This parameter is positional.
-///
-///   #quote(block: true)[*Note:* Selectable HTML content inside a block container.
+///   This parameter is positional. \
+///   #quote(block: true)[*Note:* In HTML, selectable content inside a block container.
 ///   Links and nested supported layouts keep their behavior. Nested alignment can
 ///   position a group while aligning the text inside it differently. No viewport height
 ///   is added.]

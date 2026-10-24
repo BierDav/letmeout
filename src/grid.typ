@@ -164,12 +164,11 @@
 ///
 ///   See the track size section above for more details.
 ///
-///   Default: `()`.
-///
-///   #quote(block: true)[*Note:* CSS column tracks. `auto` sizes to the content,
-///   fractions share the free width as `minmax(0, Nfr)`, and lengths and percentages
-///   keep their units. A count creates that many automatic columns; an empty array
-///   gives one automatic column.]
+///   Default: `()`. \
+///   #quote(block: true)[*Note:* In HTML, CSS column tracks. `auto` sizes to the
+///   content, fractions share the free width as `minmax(0, Nfr)`, and lengths and
+///   percentages keep their units. A count creates that many automatic columns; an
+///   empty array gives one automatic column.]
 ///
 /// - rows (auto, int, relative, fraction, array): The row sizes.
 ///
@@ -178,13 +177,12 @@
 ///
 ///   See the track size section above for more details.
 ///
-///   Default: `()`.
-///
-///   #quote(block: true)[*Note:* CSS row tracks, with the same sizing modes as columns.
-///   The last definition repeats for additional rows; an empty array gives automatic
-///   rows. Explicit rows and otherwise empty slots still receive cells and styling.
-///   Percentage row heights follow browser block-size resolution, not a PDF page
-///   height.]
+///   Default: `()`. \
+///   #quote(block: true)[*Note:* In HTML, CSS row tracks, with the same sizing modes as
+///   columns. The last definition repeats for additional rows; an empty array gives
+///   automatic rows. Explicit rows and otherwise empty slots still receive cells and
+///   styling. Percentage row heights follow browser block-size resolution, not a PDF
+///   page height.]
 ///
 /// - gutter (auto, int, relative, fraction, array): The gaps between rows and columns.
 ///   This is a shorthand to set `column-gutter` and `row-gutter` to the same value.
@@ -193,25 +191,22 @@
 ///
 ///   See the track size section above for more details.
 ///
-///   Default: `()`.
-///
-///   #quote(block: true)[*Note:* CSS gaps. Varying, `auto`, or fractional gutters
-///   become tracks between the content tracks. The last entry repeats; an empty array
-///   means zero. Axis-specific gutter settings take precedence.]
+///   Default: `()`. \
+///   #quote(block: true)[*Note:* In HTML, CSS gaps. Varying, `auto`, or fractional
+///   gutters become tracks between the content tracks. The last entry repeats; an empty
+///   array means zero. Axis-specific gutter settings take precedence.]
 ///
 /// - column-gutter (auto, int, relative, fraction, array): The gaps between columns.
 ///
-///   Default: `()`.
-///
-///   #quote(block: true)[*Note:* Like `gutter`, between columns. Takes precedence over
-///   `gutter`.]
+///   Default: `()`. \
+///   #quote(block: true)[*Note:* In HTML, like `gutter`, between columns. Takes
+///   precedence over `gutter`.]
 ///
 /// - row-gutter (auto, int, relative, fraction, array): The gaps between rows.
 ///
-///   Default: `()`.
-///
-///   #quote(block: true)[*Note:* Like `gutter`, between rows. Takes precedence over
-///   `gutter`.]
+///   Default: `()`. \
+///   #quote(block: true)[*Note:* In HTML, like `gutter`, between rows. Takes precedence
+///   over `gutter`.]
 ///
 /// - inset (relative, array, dictionary, function): How much to pad the cells’ content.
 ///
@@ -229,9 +224,8 @@
 ///
 ///   In addition, you can find an example at the `table.inset` parameter.
 ///
-///   Default: `(:)`.
-///
-///   #quote(block: true)[*Note:* Cell padding: one length for all sides, or a
+///   Default: `(:)`. \
+///   #quote(block: true)[*Note:* In HTML, cell padding: one length for all sides, or a
 ///   dictionary with `top`, `right`, `bottom`, `left`, `x`, `y`, and `rest`. Explicit
 ///   sides override axis shorthands, which override `rest`; missing grid sides use
 ///   zero. Arrays cycle by column and functions receive zero-based `(x, y)`, including
@@ -251,13 +245,12 @@
 ///
 ///   In addition, you can find an example at the `table.align` parameter.
 ///
-///   Default: `auto`.
-///
-///   #quote(block: true)[*Note:* Text alignment and CSS alignment inside each cell, on
-///   both axes. `left`/`right` are physical; `start`/`end` follow text direction.
-///   `top`/`horizon`/`bottom` use available row height. Arrays cycle by column and
-///   functions receive zero-based `(x, y)`, including empty cells. An empty array adds
-///   no alignment; a cell override replaces only its specified axes.]
+///   Default: `auto`. \
+///   #quote(block: true)[*Note:* In HTML, text alignment and CSS alignment inside each
+///   cell, on both axes. `left`/`right` are physical; `start`/`end` follow text
+///   direction. `top`/`horizon`/`bottom` use available row height. Arrays cycle by
+///   column and functions receive zero-based `(x, y)`, including empty cells. An empty
+///   array adds no alignment; a cell override replaces only its specified axes.]
 ///
 /// - fill (none, color, gradient, tiling, array, function): How to fill the cells.
 ///
@@ -270,14 +263,13 @@
 ///   Most notably, arrays and functions are useful for creating striped grids. See the
 ///   styling section above for more details.
 ///
-///   Default: `none`.
-///
-///   #quote(block: true)[*Note:* CSS backgrounds. Colours and linear, conic, and radial
-///   gradients work; tilings, off-center radial focal circles, and parent-relative
-///   gradients fail with an error. `none` is transparent. Arrays cycle by column and
-///   functions receive zero-based `(x, y)`, including empty cells. An empty array is
-///   transparent. Cell `auto` inherits the grid fill; cell `none` removes it. Colors
-///   follow the document's color scheme.]
+///   Default: `none`. \
+///   #quote(block: true)[*Note:* In HTML, CSS backgrounds. Colours and linear, conic,
+///   and radial gradients work; tilings, off-center radial focal circles, and
+///   parent-relative gradients fail with an error. `none` is transparent. Arrays cycle
+///   by column and functions receive zero-based `(x, y)`, including empty cells. An
+///   empty array is transparent. Cell `auto` inherits the grid fill; cell `none`
+///   removes it. Colors follow the document's color scheme.]
 ///
 /// - stroke (none, length, color, gradient, stroke, tiling, array, dictionary,
 ///     function):
@@ -303,10 +295,9 @@
 ///
 ///   See the styling section above for more details.
 ///
-///   Default: `(:)`.
-///
-///   #quote(block: true)[*Note:* Vector edges painted by CSS, with thickness, caps,
-///   dashes, and gradients. Accepts `paint`, `thickness`, `cap`, `join`, `dash`
+///   Default: `(:)`. \
+///   #quote(block: true)[*Note:* In HTML, vector edges painted by CSS, with thickness,
+///   caps, dashes, and gradients. Accepts `paint`, `thickness`, `cap`, `join`, `dash`
 ///   (including `array`/`phase`), and `miter-limit`, or side dictionaries using
 ///   `top`/`right`/`bottom`/`left`, `x`/`y`/`rest`. Arrays cycle by column and
 ///   functions receive zero-based `(x, y)`, including empty cells; an empty array adds
@@ -319,15 +310,14 @@
 ///
 ///   The cells are populated in row-major order.
 ///
-///   This parameter is positional.
-///
-///   #quote(block: true)[*Note:* Cells in row-major order. The page source follows the
-///   visual order, so screen readers read cells as they appear. Headers and footers
-///   render once: a screen has no page boundaries to repeat them at. Cell `x`/`y`,
-///   `colspan`/`rowspan`, `fill`/`inset`/`align`/`stroke`, and `breakable`, separator
-///   `x`/`y`/`start`/`end`/`position`/`stroke`, and header/footer `repeat`/`level` are
-///   documented individually in docs/html-semantics.md. Nested supported layouts remain
-///   selectable HTML.]
+///   This parameter is positional. \
+///   #quote(block: true)[*Note:* In HTML, cells in row-major order. The page source
+///   follows the visual order, so screen readers read cells as they appear. Headers and
+///   footers render once: a screen has no page boundaries to repeat them at. Cell
+///   `x`/`y`, `colspan`/`rowspan`, `fill`/`inset`/`align`/`stroke`, and `breakable`,
+///   separator `x`/`y`/`start`/`end`/`position`/`stroke`, and header/footer
+///   `repeat`/`level` are documented individually in docs/html-semantics.md. Nested
+///   supported layouts remain selectable HTML.]
 ///
 /// -> content
 #let grid(..args) = bridge(std.grid(..args), std.grid, html-grid)
