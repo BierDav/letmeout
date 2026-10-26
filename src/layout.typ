@@ -5,8 +5,8 @@
 #import "align.typ": html-align
 #import "shapes.typ": text-block, trim-text-block
 
-#let div(class, styles, body, hidden: false) = {
-  let attrs = (class: class, style: styles.join("; "))
+#let div(class, styles, body, hidden: false, attrs: (:)) = {
+  attrs += (class: class, style: styles.join("; "))
   if hidden { attrs.insert("aria-hidden", "true") }
   html.elem("div", attrs: attrs, body)
 }
@@ -23,7 +23,7 @@
   if type(it.amount) == fraction { return none }
   let negative = type(it.amount) == length and it.amount.to-absolute() < 0pt
   let property = if it.weak or negative { "margin-top: " } else { "height: " }
-  div("letmeout-v", (property + size(it.amount),), [], hidden: true)
+  div("letmeout-v", (property + size(it.amount),), [], hidden: true, attrs: (data-weak: repr(it.weak)))
 }
 
 // Block content needs a `div`; a `span` around it would break the paragraph structure.

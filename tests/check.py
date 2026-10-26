@@ -87,7 +87,7 @@ document_html, _ = compile_source(NATIVE_IMPORT + document_fixture, "document-ad
 document_text = document_html.read_text()
 for css in ('font-size: 36pt', 'font-weight: 300', 'font-style: italic', 'letter-spacing: -0.5pt', '--letmeout-leading: 9pt'):
     assert css in document_text, css
-assert '<letmeout-frame><svg' in document_text and '<image ' in document_text
+assert re.search(r'<letmeout-frame\b[^>]*><svg', document_text) and '<image ' in document_text
 assert 'font-size' not in re.search(r'<svg.*?</svg>', document_text).group(), "HTML styles leaked into a native frame"
 for fmt in ("pdf", "png", "svg"):
     expected, _ = compile_source(document_fixture, "document-adapters-original", fmt)
@@ -273,7 +273,7 @@ for expected in (
     assert expected in screen_text, expected
 assert screen_text.count('<span style="font-family') == 1, "only text in another font gets a span"
 # Frames stay where Typst puts them: standalone ones outside paragraphs, boxed ones inline.
-assert re.search(r"</p>(?:</letmeout-par>)?<letmeout-frame><svg", screen_text) and re.search(r"<p(?: [^>]*)?>A <letmeout-frame><svg", screen_text)
+assert re.search(r"</p>(?:</letmeout-par>)?<letmeout-frame\b[^>]*><svg", screen_text) and re.search(r"<p(?: [^>]*)?>A <letmeout-frame\b[^>]*><svg", screen_text)
 # Dark mode: every color gets a dark variant, which `dark-colors` replaces; text colors come back.
 dark, _ = compile_source(IMPORT + '#show: letmeout.with(dark-colors: ((rgb("fbf8f1"), rgb("23211c")),))\n'
                          '#set page(fill: rgb("fbf8f1"))\nA #text(fill: rgb("1d3a8f"))[navy] #text(fill: red)[red]\n'
@@ -619,7 +619,7 @@ for css in ("margin-inline-start: 28.346456692913385pt", "margin-inline-start: -
             "height: 28.346456692913385pt", "inset: calc(-1 * 3pt) calc(-1 * 3pt)"):
     assert css in adapters_text, css
 assert "\u2212" not in adapters_text, "negative numbers use an ASCII minus"
-assert adapters_text.count("<letmeout-frame>") == 2, "polygon and curve become frames"
+assert len(re.findall(r"<letmeout-frame\b", adapters_text)) == 2, "polygon and curve become frames"
 assert 'class="letmeout-text-block"' in adapters_text and "A plain block." in adapters_text and '<span style="display: inline-block">plain box</span>' in adapters_text
 assert '<span style="text-decoration: underline">native</span>' in adapters_text
 assert adapters_text.count('class="letmeout-hide"') == 2 and '<div class="letmeout-hide"' in adapters_text

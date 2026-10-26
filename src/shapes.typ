@@ -4,9 +4,10 @@
 // it, so, as in Typst, the stroke and outset never change the layout.
 // Each function returns `none` for what CSS cannot draw; the caller then keeps
 // Typst's native HTML output.
-#import "css.typ": num, size, paint, sides, stroke-value, font-css
+#import "css.typ": num, size, paint, sides, stroke-value, font-css, weight-css
 #import "math-marker.typ": math-marker
 #import "stroke.typ": svg-stroke-attrs, mask-url
+#import "flow.typ": flow-attrs, flow-style, is-inline-body
 
 // CSS can draw colors and most gradients; tilings and some gradients it cannot.
 #let paintable(value) = {
@@ -120,7 +121,7 @@
 // native values; `strokes` and `outset` are side dictionaries.
 #let shape-html(body, kind: "rect", tag: "div", display: "block", width: auto, height: auto,
   aspect: false, fill: none, strokes: (:), radius: (:), inset: (:), outset: (:), clip: false,
-  class: "letmeout-shape", extra: ()) = {
+  class: "letmeout-shape", extra: (), attrs: (:)) = {
   if not paintable(fill) { return none }
   let radii = corners(radius)
   let strokes = sides(strokes)
@@ -169,7 +170,7 @@
       stroke
     })
   }
-  html.elem(tag, attrs: (class: class, style: styles.join("; ")), {
+  html.elem(tag, attrs: attrs + (class: class, style: styles.join("; ")), {
     paints
     if body != none { body }
   })
@@ -239,12 +240,19 @@
       (ascender: "text", cap-height: "cap", x-height: "ex").at(text.top-edge, default: none)
     }
     let bottom = if type(text.bottom-edge) == str {
-      (baseline: "alphabetic", descender: "text").at(text.bottom-edge, default: none)
+      (baseline: "alphabetic", descender: "alphabetic").at(text.bottom-edge, default: none)
     }
     let styles = ("font-family: " + font-css(text.font), "font-size: " + size(text.size),
+      "font-weight: " + weight-css(text.weight), "font-style: " + text.style,
       "line-height: " + num((measure([Hg]).height + par.leading.to-absolute()) / text.size))
     if top != none and bottom != none {
       styles += ("text-box-trim: trim-both", "text-box-edge: " + top + " " + bottom)
+      // WebKit accepts the text bottom edge but still trims off descenders.
+      // Reserve the native descent explicitly, using the same font context.
+      if text.bottom-edge == "descender" {
+        let descent = measure(text(bottom-edge: "descender")[Hg]).height - measure(text(bottom-edge: "baseline")[Hg]).height
+        styles.push("padding-block-end: " + size(descent))
+      }
     }
     html.elem("div", attrs: (class: "letmeout-text-block", style: styles.join("; ")), body)
   }
@@ -258,24 +266,36 @@
   let width = if type(it.width) == fraction { auto } else { it.width }
   let height = if type(it.height) == fraction { auto } else { it.height }
   let extra = ()
+  let attrs = (:)
   let trim = name == "block" and text-block(it.body)
+  // Native HTML uses implicit, unstyled blocks around images and frames.
+  // Leave those alone so the exporter's semantic wrappers stay intact.
+  if name == "block" and not (painted or has-sides(it.inset) or width != auto or height != auto or it.clip or trim
+    or is-inline-body(it.body) or it.above != auto or it.below != auto) { return none }
   if name == "block" {
+    attrs = flow-attrs(above: it.above, below: it.below)
+    extra.push(flow-style(above: it.above, below: it.below))
+    extra.push("display: flow-root")
     if not it.breakable { extra.push("break-inside: avoid") }
-    if it.above != auto and type(it.above) != fraction { extra.push("margin-top: " + size(it.above)) }
-    if it.below != auto and type(it.below) != fraction { extra.push("margin-bottom: " + size(it.below)) }
   } else {
+    if type(it.width) == fraction {
+      attrs.insert("data-fraction", "true")
+      extra += ("flex: " + num(it.width / 1fr) + " 1 0pt", "width: 0pt")
+    }
     let shift = rel(it.baseline.shift)
     if shift != 0% + 0pt {
       let amount = shift.length + if shift.ratio != 0% and type(height) == length { height * (shift.ratio / 100%) } else { 0pt }
       extra.push("vertical-align: " + neg(amount))
+      // Flex items use baseline alignment rather than vertical-align.
+      if type(it.width) == fraction { extra.push("top: " + size(amount)) }
     }
   }
   if not (painted or has-sides(it.inset) or width != auto or height != auto or it.clip or extra.len() > 0 or trim) {
     return none
   }
   if name == "box" { extra.push("line-height: 0") }
-  shape-html(if name == "box" { compact-body(it.body) } else if trim { trim-text-block(it.body) } else { it.body }, kind: "block", tag: if name == "box" { "span" } else { "div" },
+  shape-html(if name == "box" { compact-body(it.body) } else if trim { trim-text-block(it.body) } else if is-inline-body(it.body) { par(it.body) } else { it.body }, kind: "block", tag: if name == "box" { "span" } else { "div" },
     display: if name == "box" { "inline-block" } else { "block" },
     width: width, height: height, fill: it.fill, strokes: strokes, radius: it.radius,
-    inset: it.inset, outset: it.outset, clip: it.clip, class: "letmeout-" + name, extra: extra)
+    inset: it.inset, outset: it.outset, clip: it.clip, class: "letmeout-" + name, extra: extra, attrs: attrs)
 }

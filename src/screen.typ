@@ -1,24 +1,19 @@
 // What a browser needs beyond the layout: the fonts and text colors, which
 // Typst's HTML export drops, colors that follow the reader's light or dark
 // mode, and no default margin around the page blocks.
-#import "css.typ": color-css, dark-properties, size, num, font-css
+#import "css.typ": color-css, dark-properties, size, num, font-css, weight-css
 #import "adapters.typ": adapters, math-marker
 #import "scroll.typ": scroll-css, scroll-rules
 #import "grid.typ": render-grid
 #import "line.typ": html-line
 #import "align.typ": html-align
+#import "flow.typ": flow-css, flow-attrs, flow-style, fractional-body
 
 // The colors of Typst's default raw theme (typst-library's `RAW_THEME`).
 #let raw-palette = ("#16718d", "#198810", "#1d6c76", "#301414", "#4b69c6", "#6b6b6f", "#74747c", "#8b41b1", "#b60157", "#d73948")
 
 // Elements whose content must stay plain text, so they get no spans.
 #let raw-text = ("script", "style", "title", "textarea")
-
-#let weight-css(weight) = {
-  if type(weight) == int { return str(weight) }
-  (thin: "100", extralight: "200", light: "300", regular: "400", medium: "500",
-    semibold: "600", bold: "700", extrabold: "800", black: "900").at(str(weight), default: "400")
-}
 
 // Typst writes the pixel size as `width`/`height` attributes on `<img>`, which
 // browsers treat as a CSS size. So a side the document left `auto` would keep
@@ -68,11 +63,15 @@
     // Typst highlights raw text with inline colors from its default theme; these follow the scheme too.
     css += raw-palette.map(c => "code [style=\"color: " + c + "\"] { color: " + color-css(rgb(c), role: "ink") + " !important; }")
   }
-  css.push("letmeout-frame { display: contents; } letmeout-frame > svg { max-width: 100%; height: auto; }")
+  css.push("letmeout-frame { display: contents; } letmeout-frame > svg { max-width: 100%; height: auto !important; }")
   // Links keep Typst's styling; an explicit underline inside one still renders.
   css.push("a:any-link { text-decoration: none; }")
-  // Paragraph spacing belongs between paragraphs, not at every block boundary.
-  css.push("letmeout-par > p { margin-block: 0; } letmeout-par + letmeout-par > p { margin-block-start: var(--letmeout-par-spacing); }")
+  css.push(flow-css)
+  // When text-box trimming is unavailable, short measured Typst line boxes
+  // cannot safely contain a different browser font's ascenders/descenders.
+  css.push("@supports not (text-box-trim: trim-both) { .letmeout-text-block { line-height: normal !important; padding-block-end: 0 !important; } }")
+  css.push("letmeout-par { display: flow-root; } letmeout-par > p { margin-block: 0; text-box-trim: trim-both; text-box-edge: cap alphabetic; }")
+  css.push("p:has(> [data-fraction]) { display: flex; align-items: baseline; } p:has(> [data-fraction]) > span:not([data-fraction]) { flex: 0 1 auto; min-width: 0; white-space: pre-wrap; }")
   css.push("p .letmeout-box { margin-block: calc(var(--letmeout-leading, 0pt) / 2); }")
   css.push(image-css)
   css.push(scroll-css)
@@ -102,9 +101,13 @@
   show par: it => context {
     if target() != "html" or math.equation.supplement == math-marker { return it }
     let line-height = (measure([Hg]).height + it.leading.to-absolute()) / text.size
-    html.elem("letmeout-par", attrs: (style: "display: contents; font-size: " + size(text.size) + "; --letmeout-leading: " + size(it.leading.to-absolute())
+    let fractional = fractional-body(it.body)
+    html.elem("letmeout-par", attrs: flow-attrs() + (style: flow-style(above: it.spacing, below: it.spacing)
+      + "; font-family: " + font-css(text.font) + "; font-size: " + size(text.size)
+      + "; font-weight: " + weight-css(text.weight) + "; font-style: " + text.style
+      + "; --letmeout-leading: " + size(it.leading.to-absolute())
       + "; --letmeout-par-spacing: " + size(it.spacing.to-absolute())
-      + "; line-height: " + num(line-height)), it)
+      + "; line-height: " + num(line-height)), if fractional == none { it } else { html.elem("p", fractional) })
   }
   // The HTML exporter builds MathML from native text. HTML spans inside it
   // change token types and break scripts, operators, cases, and matrices.
@@ -112,7 +115,9 @@
   show math.equation: it => { set math.equation(supplement: math-marker); it }
   show selector.or(..raw-text.map(tag => html.elem.where(tag: tag))): set text(font: root.font, fill: root.fill, size: root.size, weight: root.weight, style: root.style, tracking: root.tracking)
   // A custom element keeps frames inline or block, wherever Typst put them.
-  show html.frame: it => html.elem("letmeout-frame", it)
+  // Native SVG dimensions use em relative to this Typst font size, even when
+  // the frame contains no text that could otherwise carry that size to HTML.
+  show html.frame: it => context html.elem("letmeout-frame", attrs: (style: "font-size: " + size(text.size)), it)
   show image: image-rule
   // Native elements keep their set/show APIs and associated definitions.
   show std.grid: it => context {

@@ -377,12 +377,12 @@ their other fields and let Typst's HTML exporter handle them:
 | Native element / fields affected | HTML behavior |
 | --- | --- |
 | `text`: `size`, `weight`, `style`, `tracking` | CSS `font-size`, `font-weight`, `font-style`, and `letter-spacing`, from contextual native values. Initial settings go on the body; differing text gets spans. |
-| `par`: `leading`, `spacing` | Measured text height plus leading supplies line height. Paragraph spacing applies between adjacent paragraphs, with no browser margins at block boundaries. Half the leading goes above and below inline boxes; their own compact text height leaves `inset` unaffected by paragraph leading. A contents wrapper preserves native paragraph generation. |
+| `par`: `leading`, `spacing` | Measured text height plus leading supplies line height. Paragraph wrappers collapse their spacing with adjacent paragraphs, blocks, and grids; explicit block edges override automatic spacing. Text-box trimming excludes leading from the first/last line edges. Strong vertical space adds to the boundary gap. Half the leading goes above and below inline boxes; their own compact text height leaves `inset` unaffected. |
 | `text`: `font` | The initial document font list becomes `body`'s `font-family`; differing text gets a span. Fonts must be installed in the browser environment or supplied through CSS `@font-face`; font files are not embedded. Font dictionaries contribute their `name`; other dictionary options are not converted into CSS font-selection rules. |
 | `text`: `fill` | The initial fill becomes body text color. Differing solid colors get spans using the light/dark color conversion. Non-color local fills get no extra span or paint conversion from this adapter. |
 | `math.equation`: `body`, `supplement` | Body text is exempt from the font/color spans to preserve native MathML. A local internal supplement marker controls this exemption; the equation's supplement for references, numbering, and other fields remain native. |
 | `html.elem`: `tag`, `body` | For `script`, `style`, `title`, and `textarea`, body text uses the root text settings so the text adapter adds no spans. Tag, attributes, and native plain-text content are preserved. Other tags use native export. |
-| `html.frame`: all fields | The native frame is retained inside a `letmeout-frame` element that preserves its inline/block position. Frame rendering fields remain native; only the surrounding dark-mode CSS filter is added. |
+| `html.frame`: all fields | The native frame is retained inside a `letmeout-frame` element that preserves its inline/block position and contextual font size, so native `em` dimensions resolve correctly. SVGs shrink proportionally to fit their container, overriding the exporter's inline height. Frame rendering fields remain native; the surrounding dark-mode CSS filter follows the theme. |
 | `image`: `width`, `height`, `fit` | The native `<img>` is kept inside a `letmeout-image` element (`display: contents`). Typst writes the pixel size as `width`/`height` attributes, which browsers treat as a CSS size, so a side left `auto` is reset to `auto` and follows the aspect ratio, as in PDF. With neither side set the image is scaled down to fit its container. A fixed height that is too wide for the screen shrinks inside its box (`object-fit: contain`). With both sides set, `fit` maps to `object-fit`: `"cover"` → `cover`, `"contain"` → `contain`, `"stretch"` → `fill`. |
 | `place.flush`: no fields | Omitted in HTML: native page calls add this invisible flush, and continuous blocks already end their printed page. |
 | `math.equation` (block), `raw` (block), `table`; `grid` with a fixed-width column; `rect`, `square`, `circle`, `ellipse`, `block` with a fixed width | Wrapped in a `div.letmeout-scroll` that scrolls sideways when the content is wider than the screen; the scrollbar only appears then. Neighbouring ones, with only spaces, breaks, or invisible elements between them, share one scroll area, so a run of wide equations has a single scrollbar. Grouping reads the arguments written at the call; a width from a set rule still gets a scroll area of its own. A scroll area inside another does not scroll on its own. Runs inside a `context`, such as a template's, are hidden from letmeout: each element there scrolls on its own unless `#show: letmeout` comes after the template. The area leaves room for strokes and outsets that reach past a shape (`--letmeout-bleed`). The outer margins of code blocks are removed so the spacing stays the same, and print shows the full width. |
@@ -412,7 +412,7 @@ it, so neither stroke nor outset changes the layout, as in Typst.
 
 | Field | HTML behavior |
 | --- | --- |
-| `width`, `height` | CSS sizes, with the box including the inset. Shapes without content get Typst's default size (45×30pt, squares and circles 30pt). A shape with content and automatic width fits its content. Fractions are dropped. |
+| `width`, `height` | CSS sizes, with the box including the inset. Shapes without content get Typst's default size (45×30pt, squares and circles 30pt). A shape with content and automatic width fits its content. Fractional box widths share the remaining paragraph width using flex weights, including boxes containing heading rules. Other fractional sizes are dropped. |
 | `size`, `radius` (circle) | Become `width` and `height`; `square` and `circle` keep `aspect-ratio: 1` when a side is automatic. |
 | `fill` | Background of the paint layer. Colors and supported gradients; other paints keep native output. |
 | `stroke` | Centred on the outline. `auto` on shapes is 1pt black without a fill and none with one. Uniform dashed strokes use an SVG mask with the exact pattern; gradient strokes without dashes use a masked ring; other strokes use CSS borders per side, where dashes become `dashed` or `dotted`. |
@@ -421,9 +421,10 @@ it, so neither stroke nor outset changes the layout, as in Typst.
 | `outset` | Extends the paint layer without changing the layout. |
 | `clip` | `overflow: clip` with the corner radii. |
 | `block.breakable` | `false` emits `break-inside: avoid`. |
-| `block.above`, `block.below` | Lengths become `margin-top` and `margin-bottom`, which collapse like Typst's block spacing. |
+| `block.above`, `block.below` | Collapsing margins; `auto` uses the contextual paragraph spacing. Explicit edges override adjacent automatic spacing, including zero. Outside spacing is removed at the start/end of a containing flow. |
 | `box.baseline` | A length shift becomes `vertical-align`; a ratio needs a length height. |
-| `block.sticky`, `block.spacing` | No effect. |
+| `block.spacing` | Native shorthand for `above` and `below`; their resolved values supply the margins. |
+| `block.sticky` | No effect. |
 
 A `box` or `block` without fill, stroke, inset, size, clip, or spacing keeps
 Typst's native `<span>` or `<div>`.
@@ -461,10 +462,19 @@ overflow, including SVG shadows, while oversized layouts remain scrollable.
 Automatic tracks retain the scroll fallback because their minimum depends on
 content.
 
-Grid cell flow uses `align-content: start`; a sole explicit alignment element
-retains stretching for vertical positioning. Inline cell runs and padded inline
-content use compact native text metrics. Text-only blocks read their own styled
-text context: `ascender`/`cap-height`/`x-height` map to CSS `text`/`cap`/`ex`, and
-`baseline`/`descender` map to `alphabetic`/`text`, with `text-box-trim: trim-both`.
+Grid cell bodies use normal block flow, so sibling margins collapse and a tall
+row does not distribute spare height between children. A sole explicit alignment
+element retains stretching for vertical positioning. Mixed-style inline cell
+runs retain paragraph leading when they wrap; padded inline content and boxes
+use compact native text metrics. Grids carry the contextual paragraph spacing
+outside their scroll wrappers. Text-only blocks read their own styled
+text context: `ascender`/`cap-height`/`x-height` map to CSS `text`/`cap`/`ex`.
+Both `baseline` and `descender` trim to CSS `alphabetic`; `descender` adds the
+descent measured by Typst as bottom padding. This avoids WebKit trimming the
+descenders despite accepting `text-box-edge: cap text`.
 Other edges keep a measured line-height fallback. This removes browser text-box
 space around stacked display blocks while retaining explicit block heights.
+Paragraph and text-block containers carry the contextual font family, weight,
+and style as well as size, so trimming uses the visible text's font metrics.
+Browsers without `text-box-trim` use a normal line height for text blocks to
+reserve space for the browser font's ascenders and descenders.

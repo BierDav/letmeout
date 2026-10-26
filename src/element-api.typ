@@ -473,8 +473,8 @@
 ///   be added in the future.
 ///
 ///   Default: `auto`. \
-///   #quote(block: true)[*Note:* In HTML, CSS sizes, with the box including the inset.
-///   Fractions are dropped.]
+///   #quote(block: true)[*Note:* In HTML, CSS sizes including the inset. Fractional
+///   widths share the remaining paragraph width using flex weights.]
 ///
 /// - height (auto, relative): The height of the box.
 ///
@@ -663,21 +663,22 @@
 ///   around arbitrary block-level elements.
 ///
 ///   Default: `1.2em`. \
-///   #quote(block: true)[*Note:* In HTML, no effect.]
+///   #quote(block: true)[*Note:* In HTML, the native shorthand supplies the resolved
+///   `above` and `below` margins.]
 ///
 /// - above (auto, relative, fraction): The spacing between this block and its
 ///   predecessor.
 ///
 ///   Default: `auto`. \
-///   #quote(block: true)[*Note:* In HTML, becomes `margin-top`, which collapses like
-///   Typst's block spacing.]
+///   #quote(block: true)[*Note:* In HTML, a collapsing margin. `auto` uses paragraph
+///   spacing; an explicit value overrides adjacent automatic spacing.]
 ///
 /// - below (auto, relative, fraction): The spacing between this block and its
 ///   successor.
 ///
 ///   Default: `auto`. \
-///   #quote(block: true)[*Note:* In HTML, becomes `margin-bottom`, which collapses like
-///   Typst's block spacing.]
+///   #quote(block: true)[*Note:* In HTML, a collapsing margin. `auto` uses paragraph
+///   spacing; an explicit value overrides adjacent automatic spacing.]
 ///
 /// - clip (bool): Whether to clip the content inside the block.
 ///

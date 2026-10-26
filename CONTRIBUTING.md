@@ -15,7 +15,16 @@ paged equivalence. Generated files go in `tests/output/`. Open
 browser assertions covering RTL, vertical alignment, resizing, and stroke removal.
 Open `tests/output/document-adapters.html` and evaluate `tests/document-browser.js`
 for typography, native API alignment, layout callback images, inline grid text, and
-chip wrapping. The compile suite also checks release archives for missing documentation links.
+chip wrapping. Run these assertions in both Chromium and WebKit: font-edge syntax
+support alone does not guarantee correct glyph bounds. The checks cover actual
+descender clearance, scoped frame sizing, aspect ratios, and spacing after images.
+The compile suite also checks release archives for missing documentation links.
+
+On macOS, run the document assertions in the system `WKWebView` after compiling:
+
+```sh
+swift tests/check-wkwebview.swift
+```
 
 `scripts/api-docs.py` writes the doc comments of `grid`, `line`, `align`, `page`, and the element aliases
 from the latest Typst docs on typst.app. It copies Typst's summary,

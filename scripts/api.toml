@@ -257,7 +257,7 @@ html = """In HTML, a `span` with `display: inline-block` once it has fill, strok
 or spacing; otherwise Typst's native `span`. Paged output is unchanged."""
 
 [box.params]
-width = "In HTML, CSS sizes, with the box including the inset. Fractions are dropped."
+width = "In HTML, CSS sizes including the inset. Fractional widths share the remaining paragraph width using flex weights."
 height = "In HTML, CSS sizes, with the box including the inset. Fractions are dropped."
 baseline = "In HTML, a length shift becomes `vertical-align`; a ratio needs a length height."
 fill = "In HTML, the background of the paint layer. Colors and supported gradients; other paints keep native output."
@@ -284,9 +284,9 @@ stroke = "In HTML, centred on the outline. Uniform dashed strokes use an SVG mas
 radius = "In HTML, per-corner CSS `border-radius`. Ratios are relative to half the shorter side."
 inset = "In HTML, padding, with the box including it."
 outset = "In HTML, extends the paint layer without changing the layout."
-spacing = "In HTML, no effect."
-above = "In HTML, becomes `margin-top`, which collapses like Typst's block spacing."
-below = "In HTML, becomes `margin-bottom`, which collapses like Typst's block spacing."
+spacing = "In HTML, the native shorthand supplies the resolved `above` and `below` margins."
+above = "In HTML, a collapsing margin. `auto` uses paragraph spacing; an explicit value overrides adjacent automatic spacing."
+below = "In HTML, a collapsing margin. `auto` uses paragraph spacing; an explicit value overrides adjacent automatic spacing."
 clip = "In HTML, `overflow: clip`, with the corner radii."
 sticky = "In HTML, no effect."
 body = "In HTML, the content stays selectable HTML inside the `div`."

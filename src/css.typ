@@ -1,6 +1,12 @@
 // A number for CSS. Typst writes negative numbers with a Unicode minus sign.
 #let num(value) = str(value).replace("\u{2212}", "-")
 
+#let weight-css(weight) = {
+  if type(weight) == int { return str(weight) }
+  (thin: "100", extralight: "200", light: "300", regular: "400", medium: "500",
+    semibold: "600", bold: "700", extrabold: "800", black: "900").at(str(weight), default: "400")
+}
+
 // Preserve physical, font-relative, and percentage components as CSS lengths.
 #let size(value, percent-unit: "%") = {
   if value == auto { return "auto" }

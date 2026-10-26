@@ -75,3 +75,72 @@
   #block(height: 40pt, text(size: 36pt, top-edge: "ascender")[Given name])
   #block(text(size: 48pt, top-edge: "cap-height", bottom-edge: "descender")[Family name])
 ]
+#v(8pt)
+#text(size: 8pt)[Display subtitle]
+
+// Trimming must use the visible text's family, weight, and style. A parent
+// strut in the document font can otherwise put ink outside the measured gap.
+#block(below: 0pt)[
+  #set par(leading: 0pt, spacing: 0pt)
+  #block(text(font: "Arial", size: 48pt, weight: 800, style: "italic",
+    top-edge: "cap-height", bottom-edge: "descender")[Display gyjq])
+]
+#v(8pt)
+#text(font: "Courier New", size: 8pt, weight: 600, style: "italic")[Metric subtitle]
+
+// Default block/grid spacing adds to strong vertical space. Explicit block
+// edges override that default, including zero. Nested flow starts/ends flush.
+#block(above: 0pt, below: 0pt)[
+  #set par(spacing: 9pt)
+  #block[Flow block A]
+  #v(3pt)
+  #block[Flow block B]
+  #v(3pt)
+  #grid(columns: 1)[Flow grid A]
+  #v(3pt)
+  #grid(columns: 1)[Flow grid B]
+  #block(above: 2pt, below: 0pt)[Explicit edges]
+  #par[After explicit zero]
+]
+
+// Mixed styles must retain leading when a narrow cell wraps, just like plain
+// text. Compact metrics are appropriate for a box's inset, not a cell's lines.
+#grid(columns: (75pt, 75pt), column-gutter: 8pt, row-gutter: 7pt,
+  [Wrapped plain words that fill several lines],
+  [Wrapped *bold words* that fill several lines],
+  [Second row plain], [Second row *bold*],
+)
+
+// Fractional boxes share the remaining inline width, including lines used by
+// heading show rules. These must remain inside the paragraph in parsed HTML.
+#show heading: it => block(above: 8pt, below: 4pt)[
+  #text(size: 16pt, it.body)#h(6pt)#box(width: 1fr, baseline: -0.3em, line(length: 100%, stroke: 0.5pt + gray))
+]
+= Flexible heading
+#par[After flexible heading]
+#par[Before #box(width: 1fr, line(length: 100%)) between #box(width: 2fr, line(length: 100%)) after]
+
+#block(above: 0pt, below: 0pt)[
+  #par(spacing: 12pt)[Weak first]
+  #v(3pt, weak: true)
+  #par(spacing: 4pt)[Weak second]
+]
+#block(spacing: 5pt)[Spacing shorthand]
+#block(above: 2%, below: 1em)[Relative spacing]
+
+// Native frame SVG uses em sizes. Font scopes must survive even when the
+// frame has no selectable text; shrinking it must preserve the aspect ratio.
+#grid(columns: (90pt, 40pt), column-gutter: 10pt,
+  [
+    #set text(size: 7pt)
+    #align(center, layout(_ => box(width: 80pt, height: 100pt,
+      image("../grid/image.png", width: 100%, height: 100%, fit: "cover"))))
+    #block(above: 9pt, below: 0pt)[Small frame follower]
+  ],
+  [
+    #set text(size: 13pt)
+    #align(center, layout(_ => box(width: 80pt, height: 100pt,
+      image("../grid/image.png", width: 100%, height: 100%, fit: "cover"))))
+    #block(above: 9pt, below: 0pt)[Narrow frame follower]
+  ],
+)
