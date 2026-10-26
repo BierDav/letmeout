@@ -1,9 +1,12 @@
 // What a browser needs beyond the layout: the fonts and text colors, which
 // Typst's HTML export drops, colors that follow the reader's light or dark
 // mode, and no default margin around the page blocks.
-#import "css.typ": color-css, dark-properties
+#import "css.typ": color-css, dark-properties, size, num, font-css
 #import "adapters.typ": adapters, math-marker
 #import "scroll.typ": scroll-css, scroll-rules
+#import "grid.typ": render-grid
+#import "line.typ": html-line
+#import "align.typ": html-align
 
 // The colors of Typst's default raw theme (typst-library's `RAW_THEME`).
 #let raw-palette = ("#16718d", "#198810", "#1d6c76", "#301414", "#4b69c6", "#6b6b6f", "#74747c", "#8b41b1", "#b60157", "#d73948")
@@ -11,12 +14,10 @@
 // Elements whose content must stay plain text, so they get no spans.
 #let raw-text = ("script", "style", "title", "textarea")
 
-#let font-css(fonts) = {
-  let fonts = if type(fonts) == array { fonts } else { (fonts,) }
-  fonts.map(f => {
-    let name = if type(f) == dictionary { f.name } else { f }
-    "\"" + name.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
-  }).join(", ")
+#let weight-css(weight) = {
+  if type(weight) == int { return str(weight) }
+  (thin: "100", extralight: "200", light: "300", regular: "400", medium: "500",
+    semibold: "600", bold: "700", extrabold: "800", black: "900").at(str(weight), default: "400")
 }
 
 // Typst writes the pixel size as `width`/`height` attributes on `<img>`, which
@@ -36,6 +37,7 @@
 
 // Records which sides the image sets and, when both are, how it fits them.
 #let image-rule(it) = {
+  if target() != "html" { return it }
   let size = if it.width == auto and it.height == auto { "auto" } else if it.height == auto { "width" } else if it.width == auto { "height" } else { "both" }
   let attrs = (data-size: size)
   if size == "both" { attrs.insert("data-fit", it.fit) }
@@ -52,7 +54,7 @@
 // The document's font and text color go on the body; only text that differs gets a span.
 #let screen-style(root, options) = {
   let scheme = options.color-scheme
-  let css = ("body { margin: 0; font-family: " + font-css(root.font) + "; color: " + color-css(root.fill, role: "ink") + "; }",)
+  let css = ("body { margin: 0; font-family: " + font-css(root.font) + "; font-size: " + size(root.size) + "; font-weight: " + weight-css(root.weight) + "; font-style: " + root.style + "; letter-spacing: " + size(root.tracking) + "; color: " + color-css(root.fill, role: "ink") + "; }",)
   if scheme != none { css.push(":root { color-scheme: " + scheme + "; background: Canvas; }") }
   let overrides = dark-properties(options.dark-colors)
   if overrides.len() > 0 { css.push(":root { " + overrides.join("; ") + "; }") }
@@ -66,7 +68,12 @@
     // Typst highlights raw text with inline colors from its default theme; these follow the scheme too.
     css += raw-palette.map(c => "code [style=\"color: " + c + "\"] { color: " + color-css(rgb(c), role: "ink") + " !important; }")
   }
-  css.push("letmeout-frame { display: contents; }")
+  css.push("letmeout-frame { display: contents; } letmeout-frame > svg { max-width: 100%; height: auto; }")
+  // Links keep Typst's styling; an explicit underline inside one still renders.
+  css.push("a:any-link { text-decoration: none; }")
+  // Paragraph spacing belongs between paragraphs, not at every block boundary.
+  css.push("letmeout-par > p { margin-block: 0; } letmeout-par + letmeout-par > p { margin-block-start: var(--letmeout-par-spacing); }")
+  css.push("p .letmeout-box { margin-block: calc(var(--letmeout-leading, 0pt) / 2); }")
   css.push(image-css)
   css.push(scroll-css)
   css.push(options.css)
@@ -79,20 +86,46 @@
   // A state would cost more layout passes. A local identity show rule alone would
   // still allow the outer text transformation to run.
   show text: it => context {
-    if math.equation.supplement == math-marker { return it }
+    if target() != "html" or math.equation.supplement == math-marker { return it }
     let styles = ()
     if text.font != root.font { styles.push("font-family: " + font-css(text.font)) }
+    if text.size != root.size { styles.push("font-size: " + size(text.size)) }
+    if text.weight != root.weight { styles.push("font-weight: " + weight-css(text.weight)) }
+    if text.style != root.style { styles.push("font-style: " + text.style) }
+    if text.tracking != root.tracking { styles.push("letter-spacing: " + size(text.tracking)) }
     if type(text.fill) == color and text.fill != root.fill { styles.push("color: " + color-css(text.fill, role: "ink")) }
     if styles.len() == 0 { it } else { html.span(style: styles.join("; "), it) }
+  }
+  // Typst leading is extra space between lines, including lines of tall boxes.
+  // A CSS line-height alone only grows the paragraph strut, so inline boxes
+  // also share that leading through their block margins.
+  show par: it => context {
+    if target() != "html" or math.equation.supplement == math-marker { return it }
+    let line-height = (measure([Hg]).height + it.leading.to-absolute()) / text.size
+    html.elem("letmeout-par", attrs: (style: "display: contents; font-size: " + size(text.size) + "; --letmeout-leading: " + size(it.leading.to-absolute())
+      + "; --letmeout-par-spacing: " + size(it.spacing.to-absolute())
+      + "; line-height: " + num(line-height)), it)
   }
   // The HTML exporter builds MathML from native text. HTML spans inside it
   // change token types and break scripts, operators, cases, and matrices.
   // Set inside the rule, so the equation keeps its own supplement for references.
   show math.equation: it => { set math.equation(supplement: math-marker); it }
-  show selector.or(..raw-text.map(tag => html.elem.where(tag: tag))): set text(font: root.font, fill: root.fill)
+  show selector.or(..raw-text.map(tag => html.elem.where(tag: tag))): set text(font: root.font, fill: root.fill, size: root.size, weight: root.weight, style: root.style, tracking: root.tracking)
   // A custom element keeps frames inline or block, wherever Typst put them.
   show html.frame: it => html.elem("letmeout-frame", it)
   show image: image-rule
+  // Native elements keep their set/show APIs and associated definitions.
+  show std.grid: it => context {
+    if target() != "html" or math.equation.supplement == math-marker { return it }
+    render-grid(it)
+  }
+  show std.line: it => context {
+    if target() != "html" or math.equation.supplement == math-marker { it } else { html-line(it) }
+  }
+  show std.align: it => context {
+    if target() != "html" or math.equation.supplement == math-marker { it }
+    else { html-align(it, outer: std.align.alignment) }
+  }
   // Layout elements and shapes that Typst's HTML export ignores.
   show: adapters
   show: scroll-rules

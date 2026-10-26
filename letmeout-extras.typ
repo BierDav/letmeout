@@ -1,4 +1,8 @@
 // Optional helpers. Use `letmeout-extras.name` or `#import letmeout-extras: name`.
+// Optional layout wrappers, with HTML hover documentation.
+#import "src/grid.typ": grid
+#import "src/line.typ": line
+#import "src/align.typ": align
 // Content, show rules, and page settings for one export target.
 #import "src/target.typ": by-target, html-only, paged-only, for-target, for-html, for-paged, on-target, show-target
 // Dark mode for parts of a document.

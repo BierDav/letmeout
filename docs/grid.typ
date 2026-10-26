@@ -1,4 +1,5 @@
 #import "../lib.typ": *
+#show: letmeout
 #set document(title: "Letmeout grid example", date: none)
 
 = Letmeout

@@ -84,8 +84,23 @@
 // The native block tells Typst this is block content, so the text around it
 // still becomes paragraphs. Without styling it adds no element of its own;
 // equations make blocks unbreakable, which would.
-#let scroll(body, reach: 0pt) = block(breakable: true, html.elem("div", attrs: (
-  class: "letmeout-scroll", style: "--letmeout-bleed: " + size(reach)), body))
+#let scroll(body, reach: 0pt, minimum: none) = {
+  let attrs = (class: "letmeout-scroll", style: "--letmeout-bleed: " + size(reach))
+  if minimum != none { attrs.insert("data-fit-width", size(minimum)) }
+  let area = html.elem("div", attrs: attrs, body)
+  if minimum == none { return block(breakable: true, area) }
+  // A named size container tests the actual available width, including inside
+  // nested cells. Leave overflowing grids scrollable on small screens, but let
+  // SVG shadows and other ink overflow freely when the layout fits.
+  block(breakable: true, html.elem("div", attrs: (
+    class: "letmeout-fit", style: "container: letmeout-fit / inline-size; min-width: 0",
+  ), {
+    html.elem("style", "@container letmeout-fit (min-width: " + size(minimum) + ") { "
+      + ".letmeout-fit > .letmeout-scroll[data-fit-width=\"" + size(minimum)
+      + "\"] { overflow: visible; } }")
+    area
+  }))
+}
 
 #let scroll-inline(body, reach: 0pt) = html.elem("span", attrs: (
   class: "letmeout-scroll-inline", style: "--letmeout-bleed: " + size(reach)), body)

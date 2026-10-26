@@ -13,6 +13,9 @@ inherited defaults, placement, styling, error handling, HTML frames, and native
 paged equivalence. Generated files go in `tests/output/`. Open
 `tests/output/features.html` in T3's browser and evaluate `tests/browser.js` for
 browser assertions covering RTL, vertical alignment, resizing, and stroke removal.
+Open `tests/output/document-adapters.html` and evaluate `tests/document-browser.js`
+for typography, native API alignment, layout callback images, inline grid text, and
+chip wrapping. The compile suite also checks release archives for missing documentation links.
 
 `scripts/api-docs.py` writes the doc comments of `grid`, `line`, `align`, `page`, and the element aliases
 from the latest Typst docs on typst.app. It copies Typst's summary,
@@ -32,3 +35,7 @@ installs the latest Typst, runs `scripts/api-docs.py`, runs the tests, and
 commits the updated docs with the release. The version comes from the
 Conventional Commits since the last stable release; enable the commit message
 check once per clone with `git config core.hooksPath .githooks`.
+
+Release archives retain Markdown documentation and CONTRIBUTING.md even though
+`typst.toml` excludes them from compiler packages: Universe validates README links
+against the committed source files.

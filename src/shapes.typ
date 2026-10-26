@@ -4,7 +4,8 @@
 // it, so, as in Typst, the stroke and outset never change the layout.
 // Each function returns `none` for what CSS cannot draw; the caller then keeps
 // Typst's native HTML output.
-#import "css.typ": num, size, paint, sides, stroke-value
+#import "css.typ": num, size, paint, sides, stroke-value, font-css
+#import "math-marker.typ": math-marker
 #import "stroke.typ": svg-stroke-attrs, mask-url
 
 // CSS can draw colors and most gradients; tilings and some gradients it cannot.
@@ -155,7 +156,7 @@
   }
   styles += extra
   let paints = if fill != none or stroke != [] {
-    html.elem("span", attrs: (class: "letmeout-shape-paint", "aria-hidden": "true", style: (
+    html.elem(if tag == "div" { "div" } else { "span" }, attrs: (class: "letmeout-shape-paint", "aria-hidden": "true", style: (
       "position: absolute", "display: block", "z-index: -1", "pointer-events: none", "container-type: size",
       "inset: " + ("top", "right", "bottom", "left").map(side => {
         let v = sides(outset, default: 0pt).at(side)
@@ -207,6 +208,48 @@
 
 #let has-sides(value) = sides(value, default: none).values().any(v => v != none and v != auto and rel(v) != 0% + 0pt)
 
+// Inline boxes contain a compact text line. Paragraph leading belongs between
+// rows of boxes, and must not inflate their content area or explicit insets.
+#let compact-body(body) = {
+  show text: it => context {
+    if target() != "html" or math.equation.supplement == math-marker { return it }
+    html.span(style: "font-size: " + size(text.size)
+      + "; line-height: " + size(measure(it).height), it)
+  }
+  body
+}
+
+// A text-only block exposes its style chain before the leaf text is shown.
+// Read its own text edges, rather than using a browser line box around the
+// surrounding document font. Mixed/block content keeps its existing flow.
+#let text-block(body) = {
+  if repr(body.func()) == "styled" { return text-block(body.child) }
+  if repr(body.func()) == "sequence" {
+    return body.children.all(it => repr(it.func()) in ("text", "space", "linebreak"))
+  }
+  body.func() == text
+}
+
+#let trim-text-block(body) = {
+  if repr(body.func()) == "styled" {
+    return body.func()(trim-text-block(body.child), body.styles)
+  }
+  context {
+    let top = if type(text.top-edge) == str {
+      (ascender: "text", cap-height: "cap", x-height: "ex").at(text.top-edge, default: none)
+    }
+    let bottom = if type(text.bottom-edge) == str {
+      (baseline: "alphabetic", descender: "text").at(text.bottom-edge, default: none)
+    }
+    let styles = ("font-family: " + font-css(text.font), "font-size: " + size(text.size),
+      "line-height: " + num((measure([Hg]).height + par.leading.to-absolute()) / text.size))
+    if top != none and bottom != none {
+      styles += ("text-box-trim: trim-both", "text-box-edge: " + top + " " + bottom)
+    }
+    html.elem("div", attrs: (class: "letmeout-text-block", style: styles.join("; ")), body)
+  }
+}
+
 // Box and block keep Typst's native HTML unless they have styling to carry over.
 #let container-rule(name) = it => {
   let strokes = sides(it.stroke)
@@ -215,6 +258,7 @@
   let width = if type(it.width) == fraction { auto } else { it.width }
   let height = if type(it.height) == fraction { auto } else { it.height }
   let extra = ()
+  let trim = name == "block" and text-block(it.body)
   if name == "block" {
     if not it.breakable { extra.push("break-inside: avoid") }
     if it.above != auto and type(it.above) != fraction { extra.push("margin-top: " + size(it.above)) }
@@ -226,10 +270,11 @@
       extra.push("vertical-align: " + neg(amount))
     }
   }
-  if not (painted or has-sides(it.inset) or width != auto or height != auto or it.clip or extra.len() > 0) {
+  if not (painted or has-sides(it.inset) or width != auto or height != auto or it.clip or extra.len() > 0 or trim) {
     return none
   }
-  shape-html(it.body, kind: "block", tag: if name == "box" { "span" } else { "div" },
+  if name == "box" { extra.push("line-height: 0") }
+  shape-html(if name == "box" { compact-body(it.body) } else if trim { trim-text-block(it.body) } else { it.body }, kind: "block", tag: if name == "box" { "span" } else { "div" },
     display: if name == "box" { "inline-block" } else { "block" },
     width: width, height: height, fill: it.fill, strokes: strokes, radius: it.radius,
     inset: it.inset, outset: it.outset, clip: it.clip, class: "letmeout-" + name, extra: extra)

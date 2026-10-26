@@ -10,7 +10,7 @@ functions, the native grid subelements they adapt, and the native `page` and
 `pagebreak` APIs interpreted by `#show: letmeout`. Native argument validation
 and defaults still apply. The generated comments on the three wrapper functions
 also include Typst's parameter types, defaults, and an HTML note for every
-parameter. Use `std` for native set/show selectors; the `letmeout-extras.grid-*` aliases
+parameter. The main import preserves native set/show selectors; the `letmeout-extras.grid-*` aliases
 refer to the native grid subelements.
 
 ## Grid
@@ -376,10 +376,12 @@ their other fields and let Typst's HTML exporter handle them:
 
 | Native element / fields affected | HTML behavior |
 | --- | --- |
-| `text`: `font` | The initial document font list becomes `body`'s `font-family`; differing text gets a span. Font dictionaries contribute their `name`; other dictionary options are not converted into CSS font-selection rules. |
+| `text`: `size`, `weight`, `style`, `tracking` | CSS `font-size`, `font-weight`, `font-style`, and `letter-spacing`, from contextual native values. Initial settings go on the body; differing text gets spans. |
+| `par`: `leading`, `spacing` | Measured text height plus leading supplies line height. Paragraph spacing applies between adjacent paragraphs, with no browser margins at block boundaries. Half the leading goes above and below inline boxes; their own compact text height leaves `inset` unaffected by paragraph leading. A contents wrapper preserves native paragraph generation. |
+| `text`: `font` | The initial document font list becomes `body`'s `font-family`; differing text gets a span. Fonts must be installed in the browser environment or supplied through CSS `@font-face`; font files are not embedded. Font dictionaries contribute their `name`; other dictionary options are not converted into CSS font-selection rules. |
 | `text`: `fill` | The initial fill becomes body text color. Differing solid colors get spans using the light/dark color conversion. Non-color local fills get no extra span or paint conversion from this adapter. |
 | `math.equation`: `body`, `supplement` | Body text is exempt from the font/color spans to preserve native MathML. A local internal supplement marker controls this exemption; the equation's supplement for references, numbering, and other fields remain native. |
-| `html.elem`: `tag`, `body` | For `script`, `style`, `title`, and `textarea`, body text uses the root font/fill so the text adapter adds no spans. Tag, attributes, and native plain-text content are preserved. Other tags use native export. |
+| `html.elem`: `tag`, `body` | For `script`, `style`, `title`, and `textarea`, body text uses the root text settings so the text adapter adds no spans. Tag, attributes, and native plain-text content are preserved. Other tags use native export. |
 | `html.frame`: all fields | The native frame is retained inside a `letmeout-frame` element that preserves its inline/block position. Frame rendering fields remain native; only the surrounding dark-mode CSS filter is added. |
 | `image`: `width`, `height`, `fit` | The native `<img>` is kept inside a `letmeout-image` element (`display: contents`). Typst writes the pixel size as `width`/`height` attributes, which browsers treat as a CSS size, so a side left `auto` is reset to `auto` and follows the aspect ratio, as in PDF. With neither side set the image is scaled down to fit its container. A fixed height that is too wide for the screen shrinks inside its box (`object-fit: contain`). With both sides set, `fit` maps to `object-fit`: `"cover"` → `cover`, `"contain"` → `contain`, `"stretch"` → `fill`. |
 | `place.flush`: no fields | Omitted in HTML: native page calls add this invisible flush, and continuous blocks already end their printed page. |
@@ -443,7 +445,7 @@ Typst's native `<span>` or `<div>`.
 | `place` | `float: true` keeps the content in the flow with `clearance` as margin, aligned horizontally. Otherwise `position: absolute` in the nearest positioned container: the page body, a shape, or a styled box or block. Without a vertical alignment the content stays at its height in the flow. `dx` and `dy` become `translate`. |
 | `polygon`, `curve` | Native SVG in an `html.frame`, following the frame dark-mode policy. |
 
-`repeat` and `layout` need Typst's region sizes and are not adapted.
+`layout` callbacks become native SVG frames, preserving their paged geometry, including third-party decorations and images. SVG frames shrink to fit their HTML container. Text inside these frames is SVG, not selectable HTML. `repeat` still needs Typst's region sizes and is not adapted.
 
 ### Text decorations
 
@@ -451,3 +453,18 @@ Typst's native `<span>` or `<div>`.
 | --- | --- |
 | `underline`, `overline`, `strike` | With a custom `stroke` or `offset`, a `span` with `text-decoration-color`, `-thickness`, `-style` (`dashed`/`dotted`), and `text-underline-offset`. Gradient paint and the defaults keep native output. `extent`, `evade`, and `background` have no effect. |
 | `highlight` | A `mark` with the fill as background and the text color kept. Lengths in `radius` and `extent` become `border-radius` and `padding-inline`. `stroke`, `top-edge`, and `bottom-edge` have no effect. |
+
+HTML links suppress the browser's default underline, preserving explicit Typst
+underlining. Grids with fixed/fractional tracks and fixed/relative gutters use a
+container query based on their minimum track width: fitting layouts allow ink
+overflow, including SVG shadows, while oversized layouts remain scrollable.
+Automatic tracks retain the scroll fallback because their minimum depends on
+content.
+
+Grid cell flow uses `align-content: start`; a sole explicit alignment element
+retains stretching for vertical positioning. Inline cell runs and padded inline
+content use compact native text metrics. Text-only blocks read their own styled
+text context: `ascender`/`cap-height`/`x-height` map to CSS `text`/`cap`/`ex`, and
+`baseline`/`descender` map to `alphabetic`/`text`, with `text-box-trim: trim-both`.
+Other edges keep a measured line-height fallback. This removes browser text-box
+space around stacked display blocks while retaining explicit block heights.

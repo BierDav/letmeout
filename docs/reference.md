@@ -7,17 +7,19 @@ The [README](../README.md) has a short introduction.
 ## Imports
 
 Requires Typst 0.15 or newer. No external stylesheet or JavaScript is required.
-`grid`, `line`, and `align` need no setup; everything else needs
-`#show: letmeout`. Import with `: *` or explicitly import the functions you
-use. Bindings follow Typst's lexical scopes: import in each file that calls the
-functions, before defining helper functions that use them.
+Import the package and apply `#show: letmeout` to adapt native elements.
+A wildcard import adds only `letmeout` and the `letmeout-extras` namespace.
+Native `grid`, `line`, and `align` retain their set/show rules, `.with()`, and
+associated definitions, including `grid.cell` and `grid.header`. Helpers defined
+before importing the package are adapted too.
 
-A wildcard import adds only `grid`, `line`, `align`, `letmeout`, and the `letmeout-extras`
-namespace. All optional helpers, color-scheme functions, and native grid aliases
-live inside `letmeout-extras`:
+Optional wrappers with HTML hover documentation live in `letmeout-extras`.
+They can also be used without the document show rule. Explicitly importing these
+wrappers shadows the corresponding native functions, so use `std` for set/show
+rules and associated definitions in that scope.
 
 ```typ
-#import "lib.typ": *
+#import "@preview/letmeout:0.1.0": *
 #show: letmeout
 #show: letmeout-extras.html-only(page.with(width: auto, margin: 1em))
 ```
@@ -25,7 +27,7 @@ live inside `letmeout-extras`:
 Import individual helpers explicitly when you prefer unqualified names:
 
 ```typ
-#import "lib.typ": grid, letmeout, letmeout-extras
+#import "@preview/letmeout:0.1.0": letmeout, letmeout-extras
 #import letmeout-extras: html-only, grid-cell
 #show: letmeout
 #show: html-only(page.with(width: auto, margin: 1em))
@@ -35,7 +37,7 @@ Import individual helpers explicitly when you prefer unqualified names:
 ## HTML behavior
 
 See the [HTML field reference](html-semantics.md) for every
-parameter of the overridden functions, native grid subelements, page settings,
+parameter of the adapted elements, native grid subelements, page settings,
 and page breaks, including defaults, inheritance, stroke fields, and print-only
 behavior. The `grid`, `line`, and `align` doc comments also describe each
 parameter's HTML behavior.
@@ -58,8 +60,12 @@ parameter's HTML behavior.
 - With `#show: letmeout`, the page has no browser margin around it, and it
   follows the reader's light or dark mode. See [Dark mode](#dark-mode).
 - With `#show: letmeout`, fonts and text colors carry over. The document's font
-  and color go on the body, and text in another font or color gets a `<span>`.
-  Typst's HTML export drops both otherwise. `<script>`, `<style>`, `<title>`, and `<textarea>`
+  and color go on the body, and differently styled text gets a `<span>`. Text size,
+  weight, italic/oblique style, and tracking also carry over. Font files are not
+  embedded automatically: the family must be available to the browser, or provided
+  with CSS `@font-face` through the `css` option. Use the exact family names from
+  `typst fonts --font-path fonts`; a font filename is not necessarily its family
+  name. `<script>`, `<style>`, `<title>`, and `<textarea>`
   keep plain text. Math keeps Typst’s native MathML without text spans.
 - With `#show: letmeout`, block equations, code blocks, tables, and grids,
   shapes, blocks, and boxes with a fixed width scroll sideways when they are too
@@ -80,7 +86,7 @@ a new block. Other set rules do not start blocks, so inline styles stay in
 their paragraph. Paged output is unchanged.
 
 ```typ
-#import "lib.typ": *
+#import "@preview/letmeout:0.1.0": *
 #show: letmeout
 #set document(title: "Report")
 #show: page.with(
@@ -141,7 +147,7 @@ Use `letmeout-extras.html-only` or `letmeout-extras.paged-only` with a native `.
 to apply a wrapper for one export target:
 
 ```typ
-#import "lib.typ": *
+#import "@preview/letmeout:0.1.0": *
 #show: letmeout
 #show: page.with(paper: "a4", margin: 2.5cm)
 #show: letmeout-extras.html-only(page.with(width: auto, margin: (x: 1em, y: 2em)))
@@ -269,7 +275,7 @@ Typst cannot copy an element function's associated definitions or set/show synta
 onto a wrapper function. Use the native names for those operations:
 
 ```typ
-#import "lib.typ": *
+#import "@preview/letmeout:0.1.0": *
 #set std.grid(inset: 6pt)
 #set std.line(stroke: 1pt + blue)
 #set std.align(center)
@@ -284,12 +290,39 @@ For convenience, `letmeout-extras` exports native aliases `letmeout-extras.grid-
 `letmeout-extras.grid-vline`, `letmeout-extras.grid-header`, and `letmeout-extras.grid-footer`. They support `.with()` and native
 set/show syntax. For example, `letmeout-extras.grid-cell(colspan: 2)[...]` works in both targets.
 
-Existing uses of `grid.cell(...)`, `set grid(...)`, `set line(...)`, or
-`set align(...)` need qualification with `std` after the import. Ordinary function
-calls need only the import. This lexical limitation means the package cannot be
-a completely transparent replacement for every use of the built-in element APIs.
+With the main import, `grid.cell(...)`, `set grid(...)`, `set line(...)`, and
+`set align(...)` keep working unchanged. Qualification with `std` is necessary
+only when explicitly importing the optional wrappers from `letmeout-extras`.
 
 For paged output, all original arguments and native styling are preserved. HTML
 adapters are installed only in the HTML context, and check the target again at
 nested boundaries such as `html.frame`. The regression suite compares PDF, PNG,
 and SVG output against the native functions byte for byte.
+
+### Paragraphs and layout callbacks
+
+Paragraph line height uses measured native text height plus `par.leading`;
+`par.spacing` is applied between paragraphs. Browser margins at block boundaries
+are removed. Inline boxes use compact text height inside their explicit insets,
+with paragraph leading added only between rows of boxes. This keeps padded badges and chips apart when they wrap; explicit
+`outset` still extends paint beyond layout bounds, as it does in paged output.
+Ordinary inline text in grid cells stays in a single text flow.
+
+A `layout(...)` callback needs Typst's paged layout engine. In HTML it becomes a
+native SVG frame, preserving drawings and third-party decorations such as shadows
+around clipped images. Its interior has fixed geometry and SVG text rather than
+HTML text; the surrounding document remains HTML. Frames shrink to fit their
+container. Paged output stays native.
+
+Links have no automatic browser underline; an explicit Typst `underline` is
+preserved. Fixed and fractional grids use a container query to allow decorative
+ink such as SVG shadows to overflow when their tracks fit, and retain horizontal
+scrolling when the available width is too small.
+
+Grid cells pack ordinary flow content at the top rather than spreading spare row
+height between headings, paragraphs, and vertical spaces. An explicit `align`
+element can still use the full row height. Inline cell text and padded inline
+content use native text height, keeping row gutters independent of browser line
+boxes. Text-only blocks map `top-edge` and `bottom-edge` to CSS `text-box-trim`
+and `text-box-edge` where supported, including large stacked names. Unsupported
+text edges retain the measured line-height fallback.

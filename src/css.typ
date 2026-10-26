@@ -185,3 +185,12 @@
   if text.lang in ("ar", "ara", "he", "heb", "fa", "fas", "per", "ur", "urd", "ps", "pus", "yi", "yid", "syr", "dv", "div", "ug", "uig", "sd", "snd", "ckb") { "rtl" }
   else { "ltr" }
 }
+
+// Quote font family names consistently in text and block metrics.
+#let font-css(fonts) = {
+  let fonts = if type(fonts) == array { fonts } else { (fonts,) }
+  fonts.map(f => {
+    let name = if type(f) == dictionary { f.name } else { f }
+    "\"" + name.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+  }).join(", ")
+}

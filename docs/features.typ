@@ -1,4 +1,5 @@
 #import "../lib.typ": *
+#show: letmeout
 #set document(title: "Letmeout HTML layouts", date: none)
 
 // Give this example a readable palette in both light and dark HTML hosts.

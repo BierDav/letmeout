@@ -4,7 +4,7 @@
   release.py next CHANNEL [X.Y.Z]   the next version for alpha, rc or stable
   release.py bump VERSION           writes VERSION into typst.toml and the docs
   release.py notes TAG              release notes: the commits since the release before TAG
-  release.py bundle DIR [REF]       the package as Typst Universe gets it (REF's files without typst.toml's exclude)
+  release.py bundle DIR [REF]       the package as Typst Universe gets it (REF's files including documentation excluded from compiler packages)
 
 The next version comes from the commits since the last stable tag: a breaking change bumps the major
 version (the minor one before 1.0.0), a feat the minor one, anything else the patch. A version already
@@ -171,7 +171,12 @@ def bundle(dest, ref="HEAD"):
         shutil.rmtree(dest)
     os.makedirs(dest)
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-        members = [m for m in tar.getmembers() if m.isfile() and not excluded(m.name, exclude)]
+        # Universe validates README links even for files excluded from imports.
+        # Ship source documentation; typst.toml still excludes it from compiler packages.
+        members = [m for m in tar.getmembers() if m.isfile()
+                   and (not excluded(m.name, exclude)
+                        or m.name == "CONTRIBUTING.md"
+                        or (m.name.startswith("docs/") and m.name.endswith(".md")))]
         tar.extractall(dest, members=members, filter="data")
     for m in members:
         print(m.name)

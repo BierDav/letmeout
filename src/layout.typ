@@ -3,6 +3,7 @@
 // `none` for what CSS cannot express; the caller then keeps Typst's native output.
 #import "css.typ": num, size, sides, direction
 #import "align.typ": html-align
+#import "shapes.typ": text-block, trim-text-block
 
 #let div(class, styles, body, hidden: false) = {
   let attrs = (class: class, style: styles.join("; "))
@@ -25,17 +26,6 @@
   div("letmeout-v", (property + size(it.amount),), [], hidden: true)
 }
 
-#let pad-rule(it) = {
-  let styles = ()
-  for side in ("top", "right", "bottom", "left") {
-    let value = it.at(side)
-    if value == 0% + 0pt or value == 0pt { continue }
-    let negative = (if type(value) == relative { value.length } else { value }).to-absolute() < 0pt
-    styles.push((if negative { "margin-" } else { "padding-" }) + side + ": " + size(value))
-  }
-  div("letmeout-pad", ("display: flow-root",) + styles, it.body)
-}
-
 // Block content needs a `div`; a `span` around it would break the paragraph structure.
 #let block-elements = (parbreak, block, par, heading, list, enum, terms, list.item, enum.item, terms.item,
   std.grid, table, figure, std.align, pad, stack, columns, colbreak, place, rect, square, circle, ellipse,
@@ -49,6 +39,18 @@
   if it.has("children") { return it.children.any(is-block) }
   if it.has("child") { return is-block(it.child) }
   false
+}
+
+#let pad-rule(it) = {
+  let styles = ()
+  for side in ("top", "right", "bottom", "left") {
+    let value = it.at(side)
+    if value == 0% + 0pt or value == 0pt { continue }
+    let negative = (if type(value) == relative { value.length } else { value }).to-absolute() < 0pt
+    styles.push((if negative { "margin-" } else { "padding-" }) + side + ": " + size(value))
+  }
+  div("letmeout-pad", ("display: flow-root",) + styles,
+    if text-block(it.body) { trim-text-block(it.body) } else { it.body })
 }
 
 #let hide-rule(it) = {

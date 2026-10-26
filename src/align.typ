@@ -39,13 +39,5 @@
 ///   is added.]
 ///
 /// -> content
-#let align(..args) = {
-  let native = std.align(..args)
-  context {
-    if target() != "html" { native }
-    else {
-      let outer = std.align.alignment
-      bridge(native, std.align, it => html-align(it, outer: outer))
-    }
-  }
-}
+#let align(..args) = bridge(std.align(..args), std.align,
+  it => html-align(it, outer: std.align.alignment))

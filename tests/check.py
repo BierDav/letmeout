@@ -4,6 +4,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 import re
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,15 +58,51 @@ class Elements(HTMLParser):
         self.labels.append(data)
 
 
-# A wildcard import exposes only the layout overrides, letmeout, and letmeout-extras.
+# The main export never shadows element functions, including helpers defined
+# before the import. Native set/show rules and associated definitions survive.
+NATIVE_IMPORT = '#import "/lib.typ": *\n#show: letmeout\n'
+native_api = (
+    '#let card(body) = grid(grid.cell(inset: 3pt, body))\n'
+    '#import "/lib.typ": *\n'
+    '#assert(grid == std.grid and line == std.line and align == std.align)\n'
+    '#show: letmeout\n#set grid(columns: 2, gutter: 4pt)\n'
+    '#set line(length: 40pt)\n#set align(center)\n'
+    '#show grid.cell.where(x: 0): set text(weight: 600)\n'
+    '#grid(grid.header[Header][Row], [left], [right])\n'
+    '#card[Defined before import]\n#line()\n#align(right)[Aligned]'
+)
+native_html, _ = compile_source(native_api, "native-api", "html")
+assert 'class="letmeout-grid"' in native_html.read_text()
+assert 'class="letmeout-line"' in native_html.read_text()
+assert 'font-weight: 600' in native_html.read_text()
+for fmt in ("pdf", "png", "svg"):
+    expected, _ = compile_source(native_api.replace(NATIVE_IMPORT, "").replace('#import "/lib.typ": *\n', "").replace('#show: letmeout\n', ""), "native-api-original", fmt)
+    actual, _ = compile_source(native_api, "native-api", fmt)
+    assert expected.read_bytes() == actual.read_bytes(), f"native APIs changed {fmt}"
+
+# General document regressions exercise the same typography, wrapping, and
+# layout callback pattern used by templates with decorated photos.
+document_fixture = (ROOT / "tests/adapters/document.typ").read_text().replace('"../grid/image.png"', '"/tests/grid/image.png"')
+document_html, _ = compile_source(NATIVE_IMPORT + document_fixture, "document-adapters", "html", page_rules=True)
+document_text = document_html.read_text()
+for css in ('font-size: 36pt', 'font-weight: 300', 'font-style: italic', 'letter-spacing: -0.5pt', '--letmeout-leading: 9pt'):
+    assert css in document_text, css
+assert '<letmeout-frame><svg' in document_text and '<image ' in document_text
+assert 'font-size' not in re.search(r'<svg.*?</svg>', document_text).group(), "HTML styles leaked into a native frame"
+for fmt in ("pdf", "png", "svg"):
+    expected, _ = compile_source(document_fixture, "document-adapters-original", fmt)
+    actual, _ = compile_source(NATIVE_IMPORT + document_fixture, "document-adapters", fmt)
+    assert expected.read_bytes() == actual.read_bytes(), f"document adapters changed {fmt}"
+
+# A wildcard import exposes only letmeout and letmeout-extras.
 # Existing helper names must survive that import without being overwritten.
 helper_names = ("theme", "by-target", "html-only", "paged-only", "by-color-scheme",
                 "light-only", "dark-only", "grid-cell", "grid-header", "grid-hline",
                 "grid-vline", "grid-footer", "for-target", "for-html", "for-paged",
                 "for-scheme", "on-target", "show-target", "on-scheme")
-# Every helper except `letmeout-extras.page`: a wildcard import of letmeout-extras would shadow
+# Optional wrappers are tested explicitly below. Every helper except `letmeout-extras.page`: a wildcard import of letmeout-extras would shadow
 # `page`, and the fixtures use `set page`.
-IMPORT = '#import "/lib.typ": *\n#import letmeout-extras: ' + ", ".join(helper_names) + '\n'
+IMPORT = '#import "/lib.typ": *\n#import letmeout-extras: ' + ", ".join(helper_names + ("grid", "line", "align")) + '\n'
 namespace_probe = "".join(f"#let {name} = 42\n" for name in helper_names)
 namespace_probe += '#import "/lib.typ": *\n'
 namespace_probe += "".join(f"#assert({name} == 42)\n" for name in helper_names)
@@ -210,17 +247,17 @@ for expected in (
 assert "100svh" not in page_text and "100vh" not in page_text, "no screen-sized pages"
 # Strong breaks are print hints in the flow; weak ones render nothing.
 assert page_text.count('class="letmeout-pagebreak"') == 2
-assert "2. Continued" in parts[0] and "letmeout-pagebreak" in parts[0]
-assert re.search(r"<p>(?:(?!</p>).)*Inline(?:(?!</p>).)*stay in the paragraph", parts[0]), "inline styles split a paragraph"
+assert "2. Continued" in re.sub(r"<[^>]+>", "", parts[0]) and "letmeout-pagebreak" in parts[0]
+assert re.search(r"<p(?: [^>]*)?>(?:(?!</p>).)*Inline(?:(?!</p>).)*stay in the paragraph", parts[0]), "inline styles split a paragraph"
 assert '<header class="letmeout-page-header"' in parts[0] and "1 / 1" in parts[0]
 assert "Title page" in parts[1] and "<header" not in parts[1] and "<footer" not in parts[1]
-assert "Still the same page" in parts[2] and "3. After a nested page" in parts[2]
+assert "Still the same page" in parts[2] and "3. After a nested page" in re.sub(r"<[^>]+>", "", parts[2])
 flipped = parts[3]
 assert "max-width: 595.2755905511812pt" in flipped
 assert "padding-left: 14.2857cqi" in flipped and "padding-right: 4.7619cqi" in flipped
 # Numbers at the top replace only the automatic header, so no footer remains.
 assert '<header class="letmeout-page-header"' in flipped and "<footer" not in flipped
-assert "4. Set rule" in parts[5] and "background: light-dark(#eeeeff" in parts[5]
+assert "4. Set rule" in re.sub(r"<[^>]+>", "", parts[5]) and "background: light-dark(#eeeeff" in parts[5]
 
 # The page needs no browser margin, follows light and dark mode, and keeps the fonts.
 screen, _ = compile_source(IMPORT + '#show: letmeout\n#set document(title: "Screen")\n#set text(font: "Georgia")\n'
@@ -229,14 +266,14 @@ screen, _ = compile_source(IMPORT + '#show: letmeout\n#set document(title: "Scre
                            "screen", "html")
 screen_text = screen.read_text()
 for expected in (
-    'body { margin: 0; font-family: "georgia"; color: light-dark(#000000', ':root { color-scheme: light dark; background: Canvas; }',
+    'body { margin: 0; font-family: "georgia"; font-size: 11pt; font-weight: 400; font-style: normal; letter-spacing: 0pt; color: light-dark(#000000', ':root { color-scheme: light dark; background: Canvas; }',
     'letmeout-frame > svg { filter: var(--letmeout-dark-frame-filter)', '<span style="font-family: &quot;menlo&quot;">mono</span>',
     '<script>let x = 1;</script>', '<style>p { color: red }</style>', '<title>Screen</title>',
 ):
     assert expected in screen_text, expected
 assert screen_text.count('<span style="font-family') == 1, "only text in another font gets a span"
 # Frames stay where Typst puts them: standalone ones outside paragraphs, boxed ones inline.
-assert re.search(r"</p><letmeout-frame><svg", screen_text) and re.search(r"<p>A <letmeout-frame><svg", screen_text)
+assert re.search(r"</p>(?:</letmeout-par>)?<letmeout-frame><svg", screen_text) and re.search(r"<p(?: [^>]*)?>A <letmeout-frame><svg", screen_text)
 # Dark mode: every color gets a dark variant, which `dark-colors` replaces; text colors come back.
 dark, _ = compile_source(IMPORT + '#show: letmeout.with(dark-colors: ((rgb("fbf8f1"), rgb("23211c")),))\n'
                          '#set page(fill: rgb("fbf8f1"))\nA #text(fill: rgb("1d3a8f"))[navy] #text(fill: red)[red]\n'
@@ -380,7 +417,7 @@ assert [wide_parts(a) for a in outer] == [
 ], [wide_parts(a) for a in outer]
 assert bleed(outer[0]) == "4pt", "the group leaves room for the widest stroke and outset"
 assert bleed(outer[1]) == "0pt"
-assert re.search(r'<p>Middle.</p><div class="letmeout-scroll"[^>]*><math display="block"><mi>𝑐</mi></math></div><p>After.</p>', scroll_text), "a single wide block scrolls on its own, and text stays in paragraphs"
+assert re.search(r'<p>Middle.</p><div class="letmeout-scroll"[^>]*><math display="block"><mi>𝑐</mi></math></div><p>After.</p>', re.sub(r"</?letmeout-par[^>]*>", "", scroll_text)), "a single wide block scrolls on its own, and text stays in paragraphs"
 grid_cell = [n for n, _ in nodes if "letmeout-grid-cell-body" in classes(n)][-1]
 assert classes(grid_cell["children"][0]) == ["letmeout-scroll"], "an equation in an automatic grid scrolls in its cell"
 inline = [n for n, _ in nodes if "letmeout-scroll-inline" in classes(n)]
@@ -583,7 +620,7 @@ for css in ("margin-inline-start: 28.346456692913385pt", "margin-inline-start: -
     assert css in adapters_text, css
 assert "\u2212" not in adapters_text, "negative numbers use an ASCII minus"
 assert adapters_text.count("<letmeout-frame>") == 2, "polygon and curve become frames"
-assert '<div>A plain block.</div>' in adapters_text and '<span style="display: inline-block">plain box</span>' in adapters_text
+assert 'class="letmeout-text-block"' in adapters_text and "A plain block." in adapters_text and '<span style="display: inline-block">plain box</span>' in adapters_text
 assert '<span style="text-decoration: underline">native</span>' in adapters_text
 assert adapters_text.count('class="letmeout-hide"') == 2 and '<div class="letmeout-hide"' in adapters_text
 # Paged output is unchanged by the adapters.
@@ -635,3 +672,5 @@ print("PASS: by-target, html-only, paged-only, compatibility aliases, and native
 print("PASS: show: letmeout adapts shapes, boxes, spacing, transforms, stacks, columns, placement, and decorations")
 print("PASS: letmeout-extras.page matches native page in every format")
 print("PASS: PDF, PNG, and SVG identical to native Typst; styling and cells preserved")
+
+subprocess.run([sys.executable, str(ROOT / "tests/check-release.py")], check=True)
