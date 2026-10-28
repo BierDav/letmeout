@@ -11,7 +11,7 @@ work, and the page adapts to phones and dark mode. Your PDF stays byte for byte
 the same.
 
 ```typ
-#import "@preview/letmeout:0.1.0": *
+#import "@preview/letmeout:0.2.0": *
 #show: letmeout
 
 #show: page.with(paper: "a5", header: grid(columns: (1fr, auto), [Report], [2026]))
@@ -55,7 +55,7 @@ typst compile report.typ report.pdf
 
 Requires Typst 0.15 or newer.
 
-1. Import the package: `#import "@preview/letmeout:0.1.0": *`.
+1. Import the package: `#import "@preview/letmeout:0.2.0": *`.
 2. Put `#show: letmeout` at the top of the document, before anything else, to
    bring pages, shapes, spacing, fonts, colors, and dark mode to HTML.
    Native `grid.cell`, `set grid`, `set line`, and `set align` remain available.
@@ -63,7 +63,7 @@ Requires Typst 0.15 or newer.
    documented native aliases:
 
 ```typ
-#import "@preview/letmeout:0.1.0": *
+#import "@preview/letmeout:0.2.0": *
 #show: letmeout
 #show: page.with(paper: "a4", margin: 2.5cm)
 #show: letmeout-extras.html-only(page.with(width: auto, margin: 1em))

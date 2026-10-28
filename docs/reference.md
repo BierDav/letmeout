@@ -19,7 +19,7 @@ wrappers shadows the corresponding native functions, so use `std` for set/show
 rules and associated definitions in that scope.
 
 ```typ
-#import "@preview/letmeout:0.1.0": *
+#import "@preview/letmeout:0.2.0": *
 #show: letmeout
 #show: letmeout-extras.html-only(page.with(width: auto, margin: 1em))
 ```
@@ -27,7 +27,7 @@ rules and associated definitions in that scope.
 Import individual helpers explicitly when you prefer unqualified names:
 
 ```typ
-#import "@preview/letmeout:0.1.0": letmeout, letmeout-extras
+#import "@preview/letmeout:0.2.0": letmeout, letmeout-extras
 #import letmeout-extras: html-only, grid-cell
 #show: letmeout
 #show: html-only(page.with(width: auto, margin: 1em))
@@ -86,7 +86,7 @@ a new block. Other set rules do not start blocks, so inline styles stay in
 their paragraph. Paged output is unchanged.
 
 ```typ
-#import "@preview/letmeout:0.1.0": *
+#import "@preview/letmeout:0.2.0": *
 #show: letmeout
 #set document(title: "Report")
 #show: page.with(
@@ -147,7 +147,7 @@ Use `letmeout-extras.html-only` or `letmeout-extras.paged-only` with a native `.
 to apply a wrapper for one export target:
 
 ```typ
-#import "@preview/letmeout:0.1.0": *
+#import "@preview/letmeout:0.2.0": *
 #show: letmeout
 #show: page.with(paper: "a4", margin: 2.5cm)
 #show: letmeout-extras.html-only(page.with(width: auto, margin: (x: 1em, y: 2em)))
@@ -275,7 +275,7 @@ Typst cannot copy an element function's associated definitions or set/show synta
 onto a wrapper function. Use the native names for those operations:
 
 ```typ
-#import "@preview/letmeout:0.1.0": *
+#import "@preview/letmeout:0.2.0": *
 #set std.grid(inset: 6pt)
 #set std.line(stroke: 1pt + blue)
 #set std.align(center)
