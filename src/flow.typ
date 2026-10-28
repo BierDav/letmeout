@@ -46,7 +46,7 @@
   ).join("\n")
 }
 
-// Split a paragraph into inline runs and fractional boxes. Preserve style
+// Split a paragraph into inline runs and fractional boxes/spaces. Preserve style
 // scopes on each leaf so text around growing boxes remains normal inline text.
 #let fractional-leaves(body, wraps: ()) = {
   if repr(body.func()) == "sequence" {
@@ -55,7 +55,10 @@
   if repr(body.func()) == "styled" {
     return fractional-leaves(body.child, wraps: wraps + ((body.func(), body.styles),))
   }
-  let fractional = body.func() == std.box and type(body.at("width", default: std.box.width)) == fraction
+  let fractional = (
+    (body.func() == std.box and type(body.at("width", default: std.box.width)) == fraction)
+    or (body.func() == std.h and type(body.amount) == fraction)
+  )
   let wrapped = wraps.rev().fold(body, (acc, w) => w.at(0)(acc, w.at(1)))
   ((body: wrapped, fractional: fractional),)
 }

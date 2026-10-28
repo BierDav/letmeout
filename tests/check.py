@@ -259,6 +259,18 @@ assert "padding-left: 14.2857cqi" in flipped and "padding-right: 4.7619cqi" in f
 assert '<header class="letmeout-page-header"' in flipped and "<footer" not in flipped
 assert "4. Set rule" in re.sub(r"<[^>]+>", "", parts[5]) and "background: light-dark(#eeeeff" in parts[5]
 
+# Single-line page marginals need paragraph layout for fractional spacing too.
+fractional_footer = '''#set page(width: 600pt, margin: 20pt, footer: [
+  Course $dot$ Author #h(1fr) Assignment
+])
+#par[Left #h(1fr) Middle #h(2fr) Right]
+'''
+footer_html, _ = compile_source(NATIVE_IMPORT + fractional_footer, "fractional-footer", "html", page_rules=True)
+assert footer_html.read_text().count('class="letmeout-h"') == 3
+native, _ = compile_source(fractional_footer, "fractional-footer-native", "pdf")
+patched, _ = compile_source(NATIVE_IMPORT + fractional_footer, "fractional-footer", "pdf")
+assert native.read_bytes() == patched.read_bytes(), "fractional spacing changed PDF"
+
 # The page needs no browser margin, follows light and dark mode, and keeps the fonts.
 screen, _ = compile_source(IMPORT + '#show: letmeout\n#set document(title: "Screen")\n#set text(font: "Georgia")\n'
                            'Body #text(font: "Menlo")[mono]\n\n#html.frame[#rect()]\n\nA #box(html.frame[#circle(radius: 2pt)]) B\n'
@@ -631,8 +643,8 @@ for fmt in ("pdf", "png", "svg"):
 # What CSS cannot express keeps Typst's native HTML, with its warning.
 fallback, stderr = compile_source(IMPORT + "#show: letmeout\n#rect(fill: tiling(size: (5pt, 5pt), square(size: 2pt)))\n"
                                   "#h(1fr) #v(1fr) #scale(x: 2cm)[s] #box(fill: tiling(size: (5pt, 5pt), square(size: 2pt)))[t]",
-                                  "adapters-fallback", "html", ignored=("rect", "h", "v", "scale"))
-for element in ("rect", "h", "v", "scale"):
+                                  "adapters-fallback", "html", ignored=("rect", "v", "scale"))
+for element in ("rect", "v", "scale"):
     assert f"{element} was ignored" in stderr, element
 assert '<span style="display: inline-block">t</span>' in fallback.read_text()
 # Without `show: letmeout`, Typst's native HTML is unchanged.

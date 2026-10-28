@@ -5,6 +5,7 @@
 #import "css.typ": size, paint, direction
 #import "align.typ": align
 #import "papers.typ": papers
+#import "flow.typ": is-inline-body
 
 #let kind(it) = repr(it.func())
 
@@ -201,7 +202,16 @@
       "min-height: " + css(height),
       "padding-" + if y == bottom { "bottom" } else { "top" } + ": " + css(gap),
     ).join("; ") + "; " + inline.join("; "),
-  ), { set std.align(y); content })
+  ), {
+    set std.align(y)
+    // Keep the marginal content in one normal flow. Making its blocks direct
+    // flex items changes paragraph spacing and lets alignments grow separately
+    // into the margin instead of keeping the content together as in the PDF.
+    html.elem("div", attrs: (
+      class: "letmeout-page-" + tag + "-body",
+      style: "display: flow-root; min-width: 0",
+    ), if is-inline-body(content) { par(content) } else { content })
+  })
 
   html.elem("section", attrs: (class: "letmeout-page",
     dir: if dir == auto { direction() } else { dir }, lang: if lang == auto { text.lang } else { lang },

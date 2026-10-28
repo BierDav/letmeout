@@ -433,7 +433,7 @@ Typst's native `<span>` or `<div>`.
 
 | Element | HTML behavior |
 | --- | --- |
-| `h` | An empty `span.letmeout-h` with `margin-inline-start`; negative amounts work. Fractions stay native. |
+| `h` | An empty `span.letmeout-h` with `margin-inline-start`; negative amounts work. Fractional amounts share the remaining paragraph width with fractional boxes using flex weights. |
 | `v` | An empty `div.letmeout-v` with a height. A weak or negative amount becomes `margin-top`, which collapses with neighbouring margins like weak spacing. Fractions stay native. |
 | `pad` | `div.letmeout-pad` with padding per side; negative sides become negative margins. |
 | `hide` | `visibility: hidden` on a `span`, or a `div` for block content. The content keeps its space and is hidden from screen readers. |

@@ -48,3 +48,7 @@ check once per clone with `git config core.hooksPath .githooks`.
 Release archives retain Markdown documentation and CONTRIBUTING.md even though
 `typst.toml` excludes them from compiler packages: Universe validates README links
 against the committed source files.
+
+Evaluate `tests/footer-browser.js` on `tests/output/fractional-footer.html` in
+Chromium and WebKit at desktop and mobile widths to check footer alignment and
+weighted horizontal spacing.

@@ -102,8 +102,8 @@ their paragraph. Paged output is unchanged.
 Typst still prints "page set rule was ignored" for each page setting in HTML
 export. Packages cannot silence that warning; the settings are applied anyway.
 
-HTML has no free space to share, so `h(1fr)` stays ignored; use `grid` to
-spread a header across the width, as above.
+Fractional horizontal space such as `h(1fr)` shares the remaining paragraph
+width, including in headers and footers. Multiple spaces divide it by weight.
 
 `letmeout-extras.page` is Typst's `page` with a note on every parameter about what it does
 in HTML, which editors show on hover. It passes on exactly the arguments you
@@ -134,7 +134,7 @@ otherwise ignores them, or drops their styling:
 
 Colors follow the reader's light or dark mode, as elsewhere. When CSS cannot
 express something, the element keeps Typst's native output, including its
-"was ignored" warning: `h(1fr)` and `v(1fr)`, `scale` to a length, tilings, and
+"was ignored" warning: `v(1fr)`, `scale` to a length, tilings, and
 paints CSS cannot draw. `repeat` and `layout` need the page geometry and are
 not adapted. `rotate(reflow: true)` and `skew(reflow: true)` draw the transform
 without reflowing. Round shapes inset their content approximately, and dashes

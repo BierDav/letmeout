@@ -26,7 +26,13 @@ Still the same page.
   number-align: right + top, foreground: [Foreground])[
   #lorem(30)
 ]
-#page(width: auto, height: auto, margin: 10%, footer: [Custom footer], header: none)[
+#page(width: auto, height: auto, margin: 10%, footer: [
+  Custom footer
+
+  Second footer paragraph
+
+  #stack(spacing: 3pt, [First footer item], [Second footer item])
+], header: none)[
   Automatic size.
 ]
 #set page(fill: rgb("eef"))

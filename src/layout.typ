@@ -11,9 +11,14 @@
   html.elem("div", attrs: attrs, body)
 }
 
-// Typst's `h(1fr)` and `v(1fr)` share free space, which normal flow does not have.
+// Fractional horizontal space shares the paragraph's remaining inline width.
 #let h-rule(it) = {
-  if type(it.amount) == fraction { return none }
+  if type(it.amount) == fraction {
+    return html.elem("span", attrs: (
+      class: "letmeout-h", "aria-hidden": "true", "data-fraction": "true",
+      style: "flex: " + num(it.amount / 1fr) + " 1 0pt; min-width: 0",
+    ))
+  }
   html.elem("span", attrs: (class: "letmeout-h", "aria-hidden": "true",
     style: "margin-inline-start: " + size(it.amount)))
 }
